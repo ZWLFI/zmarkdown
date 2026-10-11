@@ -1,5 +1,5 @@
 // 墨记 icon sprite —— 与原型 index.html <defs> 逐字节一致的 symbol 定义
-// 生成源：codex/2026-09-04/momark-native-prototype-optimization/prototype/index.html
+// 生成源：momark-native-prototype-optimization/prototype/index.html
 // 铁律：改 icon 先改原型再重新生成本文件，禁止手改 path。
 export const MO_SYMBOLS = `
 <symbol id="i-sidebar" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2.5" width="12" height="11" rx="2.2"/><path d="M5.8 2.5v11"/></symbol>

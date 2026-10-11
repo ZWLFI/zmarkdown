@@ -36,7 +36,7 @@ import type { IAnnotationExportItem } from '@shared/types/ipc'
  * 的第几轮」混淆（方案 §4.3 已明确）。
  */
 
-const DOC_PATH = '/Users/ashuang/Documents/PRD-MoMark-一期二期.md'
+const DOC_PATH = '/Users/me/Documents/PRD-MoMark-一期二期.md'
 
 const item = (patch: Partial<IAnnotationExportItem> = {}): IAnnotationExportItem => ({
   index: 1,

@@ -10,7 +10,7 @@
 
 /* ============================================================
    墨记 MoMark 交互原型 v0.14 · Claude Code 实机基准 + 墨蓝主色（Anthropic 全页字族内嵌）
-   中性色：用户 Claude Code 实机画廊（~/codex/2026-09-04/claude-visual-gallery
+   中性色：Claude Code 实机画廊（claude-visual-gallery
            style.css :root + .assistant 块）为唯一权威源，去黄、去大投影
    主色：墨蓝 #3D5A80 / 深 #7FA6CC（颜色不参考 Claude，回 v6 原值）
    框架/交互：v0.14 双向拖拽分屏收口 + 网页外部打开 + 65 态平铺评审模式（详见 PAGES.md）
@@ -19,7 +19,7 @@
 :root{
   /* ══════════════════════════════════════════════════════════════
    * Claude Code 实机画廊中性色 —— 原样引入（唯一中性色权威源）
-   * /Users/ashuang/codex/2026-09-04/claude-visual-gallery/style.css
+   * claude-visual-gallery/style.css
    * 气质：近白暖灰画布、白卡片、淡墨主色、8px 圆角、小阴影
    * ══════════════════════════════════════════════════════════════ */
   --bg:#fcfcfb;              /* 画布：近白暖灰，绝不纯白、绝不发黄 */
@@ -1540,8 +1540,8 @@ TextPainter.render(doc, theme: .inkBlue)</pre>
         <div class="welcome-right">
           <h4>最近打开</h4>
           <div class="recent-list">
-            <div class="recent-item sel"><svg><use href="#i-file"/></svg><div class="rn"><div class="n">产品需求文档.md</div><div class="p">~/deepseek/momark-native/docs/</div></div><span class="t">今天</span></div>
-            <div class="recent-item"><svg><use href="#i-file"/></svg><div class="rn"><div class="n">设计系统.md</div><div class="p">~/deepseek/momark-native/docs/design/</div></div><span class="t">今天</span></div>
+            <div class="recent-item sel"><svg><use href="#i-file"/></svg><div class="rn"><div class="n">产品需求文档.md</div><div class="p">~/Documents/momark/</div></div><span class="t">今天</span></div>
+            <div class="recent-item"><svg><use href="#i-file"/></svg><div class="rn"><div class="n">设计系统.md</div><div class="p">~/Documents/momark/design/</div></div><span class="t">今天</span></div>
             <div class="recent-item"><svg><use href="#i-file"/></svg><div class="rn"><div class="n">周报.md</div><div class="p">~/Documents/</div></div><span class="t">昨天</span></div>
           </div>
           <div class="no-recent"><svg><use href="#i-clock"/></svg><p>还没有打开过文档<br>从左侧「新建文档」开始你的第一篇</p><button class="nr-new" onclick="toast('演示：新建文档（正式版直接进入编辑）')">新建文档</button></div>

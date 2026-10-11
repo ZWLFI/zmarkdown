@@ -41,13 +41,13 @@ Conventional commits：`feat(ui): …` / `fix(muya): …`，描述用中文。
 ## 验收约定
 
 - 构建产物路径由开发者**报告**，用户自行打开验收；开发者不自动安装到 `/Applications`
-- 交付安装包（dmg/zip）放 OneDrive `deepseek/2026-09-05/momark-electron/`
+- 交付安装包（dmg/zip）放约定的本地交付目录
 
 ## 发布前必须用户验收（2026-09-16 用户拍板）
 
-**打 tag、发 Release、往 OneDrive 放安装包之前，必须先让用户验收。** 开发者自测通过只算「可以交付验收」，
+**打 tag、发 Release、往交付目录放安装包之前，必须先让用户验收。** 开发者自测通过只算「可以交付验收」，
 不算「可以发布」：先把构建产物的路径（`dist/mac-arm64/墨记.app`）报给用户，等用户明确说「可以发」再走
-下面的 tag / Release / OneDrive 流程。
+下面的 tag / Release / 交付流程。
 
 原因：1.2.6 是开发者自测通过后直接发布的，用户装上后立刻发现两个自测没覆盖的问题（空文档里粘贴时气泡
 贴在窗口左上角压住标签栏；另存为把未落盘标签的建议名 `Untitled-1.md` 又拼一次 `.md`）。这类问题只有真
@@ -65,7 +65,7 @@ Conventional commits：`feat(ui): …` / `fix(muya): …`，描述用中文。
 - 正文含：一句话产品定位 → 本版改了什么（分「修复与优化」，按面板/模块分组）→「## 安装」段
   （下载 dmg/zip、拖入「应用程序」、arm64 架构说明、未公证签名的放行路径：**优先写「系统设置 → 隐私与安全性 →
   仍要打开」**，即安装窗口背景图上印的那条；终端做法 `xattr -cr /Applications/墨记.app` 只作为「已损坏」时的补充）
-- 附件命名与 OneDrive 一致：`momark-mac-arm64-<x.y.z>.dmg` + `.zip`（dmg 用 `application/octet-stream`，
+- 附件命名与交付目录一致：`momark-mac-arm64-<x.y.z>.dmg` + `.zip`（dmg 用 `application/octet-stream`，
   zip 用 `application/zip`）
 - **若中间版本漏发 Release，最新一版的正文要把这些改动一并收录**（用户看到的是 1.2.1 → 最新版），
   并在回复里说明漏发的版本
