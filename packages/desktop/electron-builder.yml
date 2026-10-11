@@ -137,6 +137,7 @@ dmg:
       y: 110
       type: 'link'
       path: '/Applications'
+      name: '应用程序' # 别名显示名（指向 /Applications，改名不影响拖拽安装）
     - x: 160
       y: 110
       type: 'file'

@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.5.5-3D5A80" alt="version" />
+  <img src="https://img.shields.io/badge/version-1.5.6-3D5A80" alt="version" />
   <img src="https://img.shields.io/badge/platform-macOS%20arm64%20%7C%20x64-lightgrey" alt="platform" />
   <img src="https://img.shields.io/badge/license-AGPL--3.0-7BA3C9" alt="license" />
   <img src="https://img.shields.io/github/stars/lixiaoshuang79/momark?style=social" alt="stars" />
@@ -80,7 +80,7 @@ HTML 块不再是源码，而是真实渲染的画面——数据图表、交互
 
 ## 安装
 
-从 [Releases](https://github.com/lixiaoshuang79/momark/releases/latest) 下载构建产物，打开 dmg 后把「墨记」拖进 `Applications`。
+从 [Releases](https://github.com/lixiaoshuang79/momark/releases/latest) 下载构建产物，打开 dmg 后把「墨记」拖进「应用程序」。
 
 > **首次打开被 macOS 拦下？** 墨记当前未做公证签名，首次打开会弹「Apple 无法验证“墨记”是否包含可能危害 Mac 安全或泄漏隐私的恶意软件」。放行方法：
 >
@@ -105,7 +105,7 @@ pnpm build:mac          # 默认 arm64；另有 build:mac:x64
 产物：
 
 - 应用：`dist/mac-arm64/墨记.app`
-- 安装包：`dist/momark-mac-arm64-1.5.5.dmg` / `dist/momark-mac-arm64-1.5.5.zip`
+- 安装包：`dist/momark-mac-arm64-1.5.6.dmg` / `dist/momark-mac-arm64-1.5.6.zip`
 
 ## 开发
 

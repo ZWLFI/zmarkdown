@@ -106,8 +106,8 @@ func render(scale: CGFloat, to file: String) {
     accent.withAlphaComponent(0.42).setStroke()
     head.stroke()
 
-    // ── 主提示：拖进 Applications
-    draw("把「墨记」拖进 Applications 完成安装",
+    // ── 主提示：拖进「应用程序」（该别名在 electron-builder.yml 里改名，Finder 标签也显示中文）
+    draw("把「墨记」拖进「应用程序」完成安装",
          font: font(sansDisplay + "Semibold", 15.5), color: accent, topY: 232, height: 24)
 
     // ── 引导卡：首次打开被 macOS 拦下时的放行路径
