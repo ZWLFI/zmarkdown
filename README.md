@@ -80,9 +80,14 @@ HTML 块不再是源码，而是真实渲染的画面——数据图表、交互
 
 ## 安装
 
-从 [Releases](https://github.com/lixiaoshuang79/momark/releases/latest) 下载构建产物，将 `墨记.app` 拖入「应用程序」。
+从 [Releases](https://github.com/lixiaoshuang79/momark/releases/latest) 下载构建产物，打开 dmg 后把「墨记」拖进 `Applications`。
 
-> macOS 版本当前未做公证签名，首次打开若提示「已损坏」，执行：
+> **首次打开被 macOS 拦下？** 墨记当前未做公证签名，首次打开会弹「Apple 无法验证“墨记”是否包含可能危害 Mac 安全或泄漏隐私的恶意软件」。放行方法：
+>
+> 1. 打开 **系统设置 → 隐私与安全性**，在「安全性」一栏点「**仍要打开**」；
+> 2. 再打开一次墨记，在弹窗里选「打开」。
+>
+> 注意：macOS 15 起旧的「右键 → 打开」已失效，请走上面的「仍要打开」。若提示的是「**已损坏**，无法打开」，可在终端执行：
 >
 > ```bash
 > xattr -cr /Applications/墨记.app
