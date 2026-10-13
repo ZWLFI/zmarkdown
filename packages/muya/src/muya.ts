@@ -244,6 +244,23 @@ export class Muya {
         return this.editor.jsonState.getMarkdown();
     }
 
+    /**
+     * Serialize an ARBITRARY markdown text through the engine's own
+     * parse→serialize pipeline — the same one `getMarkdown` uses, with the
+     * same options — without touching the live document.
+     *
+     * The desktop uses this to tell a formatting-only external rewrite apart
+     * from a real content change: the editor buffer always holds the engine's
+     * canonical form (e.g. `| a | b |` is re-padded to `| a   | b   |`), while
+     * the file on disk keeps whatever an external writer produced. Comparing
+     * raw strings would flag those purely cosmetic differences as changes.
+     */
+    canonicalizeMarkdown(markdown: string): string {
+        const { jsonState } = this.editor;
+
+        return jsonState.getMarkdownFromState(jsonState.markdownToState(markdown));
+    }
+
     // Flush queued edits synchronously; call before swapping the document out
     // (e.g. a tab switch) so a same-frame keystroke isn't lost (#2938).
     flush() {
