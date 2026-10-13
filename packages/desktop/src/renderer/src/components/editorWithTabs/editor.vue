@@ -1930,14 +1930,30 @@ const handleFileChange = (payload: unknown) => {
       // it too. `replaceContent` preserves the existing undo stack and pushes the
       // boundary on top.
       //
-      // The new content is this tab's clean baseline (the store seeds
-      // `lastSavedHistoryId: 0`), so re-seed the save-tracking allocator BEFORE
-      // applying: `replaceContent` fires a SYNCHRONOUS `json-change` that would
-      // otherwise mark the tab dirty against the stale (pre-reload) baseline.
-      if (id) {
-        resetSyntheticHistory(id, newMarkdown)
-      }
+      // `replaceContent` fires a SYNCHRONOUS `json-change`, so the save-tracking
+      // baseline must be seeded around it. The baseline content is the ENGINE's
+      // own serialization of the reloaded document, NOT the raw payload: the
+      // file on disk may not be in engine-canonical form (e.g. an external
+      // writer's table padding), and seeding with the raw text would make the
+      // very json-change this call fires look like brand-new content — the tab
+      // was left flagged unsaved right after a reload that changed nothing
+      // visible (2026-10-13). Same rule as the fresh-open path in
+      // `setMarkdownToEditor`.
       editor.value.replaceContent(newMarkdown)
+      if (id) {
+        const engineMarkdown = editor.value.getMarkdown()
+        resetSyntheticHistory(id, engineMarkdown)
+        // The event fired inside `replaceContent` already marked the tab dirty
+        // against the pre-reload baseline; re-report the now-current content so
+        // the store re-evaluates it against the fresh baseline (id 0 → clean,
+        // and `tab.markdown` is updated to the engine-canonical text).
+        editorStore.LISTEN_FOR_CONTENT_CHANGE({
+          id,
+          markdown: engineMarkdown,
+          history: makeSyntheticHistory(id, engineMarkdown),
+          fromEngine: true
+        })
+      }
       editorStore.UPDATE_TOC(editor.value.getTOC())
       if (newCursor) {
         applyCursor(editor.value, newCursor)
@@ -2182,6 +2198,9 @@ onMounted(() => {
   // The first document's content is set via constructor options, so no
   // `file-loaded` / `setMarkdownToEditor` runs for it — seed its TOC here.
   editorStore.UPDATE_TOC(muya.getTOC())
+  // 外部改动判定（store 侧）需要引擎同款规范化：磁盘原文与编辑区缓冲可能只差
+  // 引擎的格式归一（表格填充等），两边都过一遍引擎管线再比才判得准。
+  editorStore.SET_MARKDOWN_CANONICALIZER((md: string) => muya.canonicalizeMarkdown(md))
 
   // 内容标注：把引擎挂进标注 store（面板与持久化从这里取数），并接引擎事件。
   // 工具条「标注」按钮（含跨块通道）→ 展开右栏并切到标注 tab；
