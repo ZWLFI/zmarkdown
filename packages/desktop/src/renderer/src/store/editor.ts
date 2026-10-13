@@ -174,6 +174,25 @@ const autoSaveTimers = new Map<string, ReturnType<typeof setTimeout>>()
 // 同步（右栏的编辑必须还能同步进左引擎）。
 const engineWrittenMarkdown = new Map<string, string>()
 
+// 引擎「规范化」函数：由 editor.vue 在创建 Muya 引擎时注册
+// （`editor.canonicalizeMarkdown`）。编辑区的缓冲始终是引擎规范形态——表格
+// `| a | b |` 会被重排成 `| a   | b   |`、列表缩进等也会归一——而磁盘文件
+// 保留外部写入者的原始形态。外部改动判定用它把两边都过一遍同一管线，渲染
+// 结果一致时视为「纯格式差异」，不提示、不重载（2026-10-13：此前用原始串
+// 直接比，agent 改写 PRD 的表格填充就会触发「已在磁盘上发生变更」横幅）。
+let markdownCanonicalizer: ((markdown: string) => string) | null = null
+
+/** 两份 markdown 渲染语义是否一致（都经引擎规范化后比较）。 */
+const isSameRenderedMarkdown = (a: string, b: string): boolean => {
+  if (!markdownCanonicalizer) return false
+  try {
+    return markdownCanonicalizer(a) === markdownCanonicalizer(b)
+  } catch {
+    // 规范化失败（引擎异常）按「有变化」处理，走正常提示路径。
+    return false
+  }
+}
+
 export const useEditorStore = defineStore('editor', {
   state: (): EditorState => ({
     currentFile: null,
@@ -1717,6 +1736,12 @@ export const useEditorStore = defineStore('editor', {
       return !!id && engineWrittenMarkdown.get(id) === markdown
     },
 
+    // 注册引擎规范化函数（`Muya.canonicalizeMarkdown`），供外部改动的
+    // 「纯格式差异」判定使用。传 null 可解除（测试/热重载用）。
+    SET_MARKDOWN_CANONICALIZER(fn: ((markdown: string) => string) | null): void {
+      markdownCanonicalizer = fn
+    },
+
     // P2（按键路径）：派生量（字数 / TOC）由 editor.vue 防抖到空闲后单独推上来。
     // 这两项只喂面板与状态栏，不需要跟着每个按键同步重算——原本每个
     // `json-change` 都跑一次整篇字数统计 + 一次 TOC 遍历 + 一次 deep-equal，
@@ -1876,6 +1901,17 @@ export const useEditorStore = defineStore('editor', {
               // reload and no reason to warn the user (#1861).
               const newMarkdown = (change as unknown as FileChangePayload).data?.markdown
               if (typeof newMarkdown === 'string' && newMarkdown === tab.markdown) {
+                break
+              }
+
+              // 纯格式差异：磁盘原文与缓冲字形不同、但经引擎规范化后渲染一致
+              // （表格填充、列表缩进等外部写法的归一化）。重载后画面不会有任何
+              // 变化，同样不提示、不置脏（2026-10-13：agent 改写 PRD 的紧凑表格
+              // 每轮都会误报「已在磁盘上发生变更」）。
+              if (
+                typeof newMarkdown === 'string' &&
+                isSameRenderedMarkdown(newMarkdown, tab.markdown)
+              ) {
                 break
               }
 

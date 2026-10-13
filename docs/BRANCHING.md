@@ -63,7 +63,8 @@ Conventional commits：`feat(ui): …` / `fix(muya): …`，描述用中文。
 
 - 标题 `墨记 V<x.y.z>`，tag 用已推上 `origin` 的 `momark/<x.y.z>`，target `main`
 - 正文含：一句话产品定位 → 本版改了什么（分「修复与优化」，按面板/模块分组）→「## 安装」段
-  （下载 dmg/zip、拖入「应用程序」、arm64 架构说明、未公证签名的 `xattr -cr /Applications/墨记.app`）
+  （下载 dmg/zip、拖入「应用程序」、arm64 架构说明、未公证签名的放行路径：**优先写「系统设置 → 隐私与安全性 →
+  仍要打开」**，即安装窗口背景图上印的那条；终端做法 `xattr -cr /Applications/墨记.app` 只作为「已损坏」时的补充）
 - 附件命名与交付目录一致：`momark-mac-arm64-<x.y.z>.dmg` + `.zip`（dmg 用 `application/octet-stream`，
   zip 用 `application/zip`）
 - **若中间版本漏发 Release，最新一版的正文要把这些改动一并收录**（用户看到的是 1.2.1 → 最新版），

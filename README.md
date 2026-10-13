@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.5.5-3D5A80" alt="version" />
+  <img src="https://img.shields.io/badge/version-1.5.6-3D5A80" alt="version" />
   <img src="https://img.shields.io/badge/platform-macOS%20arm64%20%7C%20x64-lightgrey" alt="platform" />
   <img src="https://img.shields.io/badge/license-AGPL--3.0-7BA3C9" alt="license" />
   <img src="https://img.shields.io/github/stars/lixiaoshuang79/momark?style=social" alt="stars" />
@@ -80,9 +80,14 @@ HTML 块不再是源码，而是真实渲染的画面——数据图表、交互
 
 ## 安装
 
-从 [Releases](https://github.com/lixiaoshuang79/momark/releases/latest) 下载构建产物，将 `墨记.app` 拖入「应用程序」。
+从 [Releases](https://github.com/lixiaoshuang79/momark/releases/latest) 下载构建产物，打开 dmg 后把「墨记」拖进「应用程序」。
 
-> macOS 版本当前未做公证签名，首次打开若提示「已损坏」，执行：
+> **首次打开被 macOS 拦下？** 墨记当前未做公证签名，首次打开会弹「Apple 无法验证“墨记”是否包含可能危害 Mac 安全或泄漏隐私的恶意软件」。放行方法：
+>
+> 1. 打开 **系统设置 → 隐私与安全性**，在「安全性」一栏点「**仍要打开**」；
+> 2. 再打开一次墨记，在弹窗里选「打开」。
+>
+> 注意：macOS 15 起旧的「右键 → 打开」已失效，请走上面的「仍要打开」。若提示的是「**已损坏**，无法打开」，可在终端执行：
 >
 > ```bash
 > xattr -cr /Applications/墨记.app
@@ -100,7 +105,7 @@ pnpm build:mac          # 默认 arm64；另有 build:mac:x64
 产物：
 
 - 应用：`dist/mac-arm64/墨记.app`
-- 安装包：`dist/momark-mac-arm64-1.5.5.dmg` / `dist/momark-mac-arm64-1.5.5.zip`
+- 安装包：`dist/momark-mac-arm64-1.5.6.dmg` / `dist/momark-mac-arm64-1.5.6.zip`
 
 ## 开发
 

@@ -39,6 +39,7 @@ sleep 3 && swift /tmp/momark-winlist.swift   # 确认窗口标题
 2. ```mermaid 代码块 → SVG 图表
 
    ```
+
 3. iframe 标签 → 沙箱渲染（momark-web:// scheme 拦截生效）
 4. 菜单/⌥⌘B → 右侧 420pt 浏览器面板开合；面板打开 Demo.md 所在目录 md 文件 → 并行浏览
 

@@ -19,6 +19,9 @@ vi.mock('@/services/notification', () => ({
   default: { notify: vi.fn(), name: 'notify' }
 }))
 vi.mock('@/store/bufferedState', () => ({ debouncedSendBufferedState: vi.fn() }))
+// autoSave 关闭：否则「内容真的变了」用例会走进 loadChange（自动重载通道），
+// 而该用例的迷你夹具没有 history 字段，会在夹具上而不是在被测逻辑上崩掉。
+vi.mock('@/store/preferences', () => ({ usePreferencesStore: () => ({ autoSave: false }) }))
 
 import { useEditorStore } from '@/store/editor'
 
@@ -35,7 +38,13 @@ describe('useEditorStore LISTEN_FOR_FILE_CHANGE — content-identical change (#1
   })
 
   const makeSavedTab = (store: ReturnType<typeof useEditorStore>) => {
-    const tab = { id: 'tab-1', filename: 'a.md', pathname: '/x/a.md', markdown: 'hello', isSaved: true }
+    const tab = {
+      id: 'tab-1',
+      filename: 'a.md',
+      pathname: '/x/a.md',
+      markdown: 'hello',
+      isSaved: true
+    }
     store.tabs = [tab] as unknown as typeof store.tabs
     store.tabIdToIndex = { 'tab-1': 0 }
     return tab

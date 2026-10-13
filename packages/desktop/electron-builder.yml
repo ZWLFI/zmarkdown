@@ -127,13 +127,20 @@ mac:
     - zip
 dmg:
   artifactName: 'momark-mac-${arch}-${version}.${ext}'
+  # 安装引导背景（build/background.png 600×448 + background@2x.png，electron-builder 自动合成视网膜 TIFF）。
+  # 背景图尺寸即 Finder 窗口尺寸：标题栏 32pt + 底部信息栏 28pt 会盖住图，可见区只有顶部 388pt，
+  # 所以背景内容都画在 y ≤ 384、底部留作裁切出血。重新生成：swift scripts/make-dmg-background.swift packages/desktop/build
+  background: build/background.png
+  # 图标坐标含义：x = 图标水平中心，y = 图标顶边（距内容区顶部）。
+  # 改动这里必须同步 scripts/make-dmg-background.swift 里的 ICON_L_X/ICON_R_X/ICON_Y。
   contents:
-    - x: 410
-      y: 240
+    - x: 440
+      y: 110
       type: 'link'
       path: '/Applications'
-    - x: 130
-      y: 240
+      name: '应用程序' # 别名显示名（指向 /Applications，改名不影响拖拽安装）
+    - x: 160
+      y: 110
       type: 'file'
 linux:
   artifactName: 'momark-linux-${version}.${ext}'
