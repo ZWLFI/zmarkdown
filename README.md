@@ -1,136 +1,148 @@
-<p align="center">
-  <img src="packages/desktop/static/logo-96px.png" alt="MoMark 墨记" width="96" />
-</p>
+<div align="center">
 
-<h1 align="center">墨记 MoMark</h1>
+<img src="docs/readme/hero.png" alt="墨记 MoMark 横幅：左侧为 logo，右侧标题为「写作时手边要有的一切，都在同一个窗口」，下方列出四项特性：HTML 块内嵌渲染、内容标注、网页 / 文档右栏、标签拖拽分屏" width="100%" />
 
-<p align="center">
-  为 macOS 打造的中文优先 Markdown 编辑器<br />
-  标签拖拽分屏 · 网页与文档双模右栏 · 内容标注批注 · 图表原型直接渲染在文档里
-</p>
+**中文** · [English](README.en.md)
 
-<p align="center">
-  <img src="https://img.shields.io/badge/version-1.5.6-3D5A80" alt="version" />
-  <img src="https://img.shields.io/badge/platform-macOS%20arm64%20%7C%20x64-lightgrey" alt="platform" />
-  <img src="https://img.shields.io/badge/license-AGPL--3.0-7BA3C9" alt="license" />
-  <img src="https://img.shields.io/github/stars/lixiaoshuang79/momark?style=social" alt="stars" />
-</p>
+<a href="https://github.com/lixiaoshuang79/momark/releases/latest"><img src="https://img.shields.io/badge/download-Releases-3D5A80" alt="download from Releases" /></a>
+<img src="https://img.shields.io/badge/macOS-arm64%20%7C%20x64-4f5a69" alt="macOS arm64 / x64" />
+<a href="LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0-7fa6cc" alt="license AGPL-3.0" /></a>
 
----
+</div>
 
-墨记把「写作时手边要有的一切」放进同一个窗口：左边写，右边放资料；需要对照就拖一个标签出去并排；数据图表和交互原型不必另开浏览器，直接长在文档里。中文输入的每一处细节都按中文写作的习惯重新趟过一遍。
+墨记（MoMark）是 macOS 上的中文优先 Markdown 编辑器。在常规的 Markdown 编辑之外，墨记提供三项主要特性：
 
-## 特色
+- [HTML 块内嵌渲染](#html-块内嵌渲染)：文档中的 `html` 代码块直接显示为渲染后的页面，块内脚本在沙箱中运行。
+- [内容标注](#内容标注)：在原文上逐条记录修改意见，并整体复制为结构化文本，交给 AI 处理。
+- [网页与文档右栏](#网页与文档右栏)：在编辑区右侧打开网页，或将另一篇文档拖入右栏并排编辑。
 
-### 标签拖拽分屏
+[下载安装包](https://github.com/lixiaoshuang79/momark/releases/latest) · [首次打开被 macOS 拦截](#首次打开被-macos-拦截) · [从源码构建](#从源码构建)
 
-标签页拖出即可把文档放入右栏，左右双文档并行编辑——对照资料、迁移内容、边写边改。分屏边距经过精心调校，滚动条居中于分隔带，不侵占正文。
+## HTML 块内嵌渲染
 
-### 网页 / 文档双模右栏
+![左侧为 .md 文件中保存的 html 代码块（含 script），右侧为墨记打开后的显示效果：一张可交互的分享卡原型，右下角为缩放控制条](docs/readme/html-block.png)
 
-右侧面板在「网页」与「文档」之间一键切换，并带独立的网页标签页与地址栏：一边浏览网页资料，一边随手把内容整理进左侧文档。
+在 `.md` 文件中写入 `html` 代码块，墨记显示的是该代码渲染后的页面，而不是源码。上图左侧为文件中实际保存的文本，右侧为在墨记中打开后的效果。需求文档中的交互原型、数据报告中的图表，均可通过这种方式直接嵌入正文，无需另附链接。
 
-### HTML 块内嵌渲染（带脚本，单文件可带走）
+### 脚本隔离
 
-HTML 块不再是源码，而是真实渲染的画面——数据图表、交互式原型直接显示在文档里。块内带脚本也能跑：脚本在沙箱中执行，碰不到编辑器、文档和本地文件；HTML 与脚本本身就写在 .md 里，所以一个文件发给别人、离线打开也照样画得出来。右下角控制条支持 50%–200% 缩放，拖拽即可调整视口大小，预览高度跟随内容自动收紧。
+块内的 `<script>` 会正常执行，其作用范围限定在块内部：
 
-导出时，内嵌块按它在文档里的显示尺寸原样带走：**导出 HTML** 得到的是活的沙箱帧——双击打开就能点、能切页签，右下角工具条还能继续缩放、拖拽改大小；**导出 PDF / Word** 时它变成一张截图，所见即所得。块的尺寸与缩放比例也能跟着文档存下来，下次打开还是你调好的样子。
+![三层隔离示意：主进程、编辑器渲染进程、html 块所在的 iframe。块内脚本访问编辑器界面、文档内容与本地文件的路径均在 iframe 边界处被阻断](docs/readme/sandbox.png)
 
-手上已经有一个 html 文件时，直接把它粘进文档即可：墨记会弹出一个气泡让你二选一——**内嵌到文档**（同目录的样式、脚本、图片一并内联，转完 .md 单文件就能带走），或者**上传图床并插入链接**（走你配置好的上传服务，文档里只留一条链接）。
+- 整个 html 块运行在 `sandbox="allow-scripts"` 的 iframe 中。块内脚本无法访问编辑器界面与文档内容，也无法读写本地文件。
+- 编辑器自身的渲染进程同样启用了 `sandbox: true` 与 `contextIsolation`，Node 能力只能通过 `contextBridge` 白名单调用。
 
-### 为 AI 协作者准备的「内容标注」
+### 使用方式
 
-选中一段话，点工具条上的「标注」，写一句修改意见——正文留下淡墨蓝高亮与序号，右栏「标注」面板统一管理每一条。一轮批注攒齐后**一键复制**成结构化文本：章节路径、行号、原文引用、所在段落、你的要求，整段直接粘给 AI Agent，让它精确改到点上，不再靠"第三章那段"式的口头描述。
+- 缩放与视口：块右下角的控制条提供 50%–200% 缩放，并可通过拖拽调整视口大小。预览高度随内容自动调整，范围为 60–1200px。
+- 尺寸保存：调整后的尺寸与缩放比例随文档一起保存，再次打开时保持不变。
+- 单文件分发：HTML 与脚本直接保存在 `.md` 文件中。将该文件发送给他人后，对方在离线状态下打开同样可以渲染。
+- 粘贴 `.html` 文件：粘贴现成的 `.html` 文件时，墨记弹出选项气泡，提供两种处理方式：
+  - 「内嵌到文档」：将同目录下的样式、脚本与图片一并内联，转换为单个 `.md` 文件；
+  - 「上传图床并插入链接」：通过已配置的上传服务上传，文档中仅保留一条链接。
+- 导出：导出为 HTML 时，块保留为可交互的沙箱帧，可以点击、切换页签，右下角工具条仍可缩放与拖拽；导出为 PDF 或 Word 时，块转为一张等比截图，与屏幕显示一致。
 
-复制过的条目标记为「已复制」，AI 改完文档后自动比对提示"内容已变化 / 未变化"，逐条核对、归档进历史。批注存在应用数据目录里，**不写进 .md 一个字**——交付出去的文档永远干净。
+## 内容标注
 
-### 块级编辑内核
+内容标注用于在原文上逐条记录修改意见，再将全部意见连同位置信息一次交给 AI。每条意见都带有章节路径、行号与原文引用，AI 不需要根据「第三章那段」一类的描述自行判断修改位置。
 
-基于块（block-based）的 Markdown 编辑内核：结构化的文档模型、精确的增量更新与顺滑的光标操作，为表格、图表、内嵌预览等扩展能力提供了统一底座。
+![编辑器中三处文字带有淡墨蓝高亮与序号，标注卡片上列出「删掉」等常用语；右栏标注面板列出三条意见，底部为「复制所有标注」按钮](docs/readme/annotate.png)
 
-### 为中文写作打磨
+### 添加标注
 
-针对中文输入做过系统性优化：表格单元格 IME 输入全链路修复，软换行场景下输入法提交的内容完整保留——中文写作不丢字、不跳光标。
+1. 选中一段文字，在工具条中点击「标注」，输入一句修改意见。
+2. 正文中该段文字显示淡墨蓝高亮与序号，原文内容不变。
+3. 右栏「标注」面板列出全部标注，可逐条查看与管理。
 
-### 墨蓝极简设计
+常用语：经常使用的修改要求（例如「看不懂，优化表达」「删掉」）可保存为常用语。选中文字后点击某条常用语，即完成一条标注。
 
-以墨蓝为主色的极简设计语言：克制的配色、非对称的侧栏动效、滚动时若隐若现的细线滚动条——界面让位于内容。
+### 复制与核对
 
-### 纯净中文体验
+![左侧为复制得到的结构化文本，按章节路径与行号、原文引用、所在段落、修改要求分段；右侧为 AI 修改后的标注面板，前两条显示「内容已变化」，第三条显示「内容未变化」](docs/readme/handoff.png)
 
-界面全量中文，开箱即用；运行时数据独立存放，与其他编辑器互不干扰。
+一轮标注完成后，点击「复制所有标注」，得到一段结构化文本。每条标注包含章节路径、行号、原文引用、所在段落与修改要求。将这段文本粘贴给 AI Agent，即可逐条定位到对应位置进行修改。
 
-## 效果预览
+复制过的条目会标记为「已复制」。AI 修改文档后，墨记自动与原文比对，逐条提示「内容已变化」或「内容未变化」，据此可以确认哪些意见尚未处理。核对完成的标注可归档至历史记录。
 
-**图文笔记** —— 表格与彩色插图混排，图片即文档内容：
+标注数据保存在应用数据目录中，不向 `.md` 文件写入任何内容。交付的文档保持原样。
 
-<img src="docs/screenshots/notes-biology.png" alt="生物图文笔记" width="760" />
+## 网页与文档右栏
 
-**数据分析报告** —— 交互图表直接渲染进文档，悬停即看数值：
+![左侧为正在编辑的需求文档；右栏处于网页模式，显示一篇参考文章，右侧竖排三个网页标签，底部为地址栏；一个标签页正被拖向右栏](docs/readme/side-panel.png)
 
-<img src="docs/screenshots/data-report.png" alt="数据分析报告" width="760" />
+右侧面板有「网页」与「文档」两种模式，可随时切换。
 
-**边写边查** —— 左侧写需求文档，右侧同步查阅网页资料：
+网页模式：右栏带有独立的标签页与地址栏，支持多个页面之间切换，以及前进、后退。页面缩放使用 ⌘+ / ⌘- / ⌘0，范围为 0.25–3 倍；也可选择「适应宽度」。查阅参考资料时无需离开编辑窗口。
 
-<img src="docs/screenshots/prd-with-web.png" alt="PRD 与网页对照" width="760" />
+文档模式：将标签页拖入右栏，即可与当前文档左右并排，两篇文档均可编辑。滚动条位于两栏之间的分隔带上，不占用正文区域。
 
-**双文档分屏** —— 左右两篇文档并排对照：
+## 其他功能
 
-<img src="docs/screenshots/split-docs.png" alt="双文档分屏" width="760" />
+中文输入方面，墨记修复了表格单元格中输入法输入的完整链路；在软换行的长段落中，输入法上屏的内容完整保留，不会出现字符丢失或光标跳动。界面内置十余种语言，中文为第一优先，中文界面文案经过重新校订。
+
+| 类别     | 说明                                                                                   |
+| -------- | -------------------------------------------------------------------------------------- |
+| Markdown | CommonMark、GitHub Flavored Markdown；KaTeX 数学公式；Mermaid、PlantUML 图表           |
+| 编辑模式 | 源码模式、打字机模式、专注模式                                                         |
+| 导出     | HTML、PDF、Word                                                                        |
+| 常用工具 | 命令面板、全文搜索、图片上传（通过已配置的上传服务）、应用内检查与下载更新             |
+| 外观     | 主色为墨蓝 `#3D5A80`；浅色、深色两套主题；侧栏采用非对称动效；细线滚动条仅在滚动时显示 |
+| 数据     | 数据目录独立存放，不与其他编辑器互相干扰                                               |
 
 ## 安装
 
-从 [Releases](https://github.com/lixiaoshuang79/momark/releases/latest) 下载构建产物，打开 dmg 后把「墨记」拖进「应用程序」。
+从 [Releases](https://github.com/lixiaoshuang79/momark/releases/latest) 下载 dmg 或 zip 安装包。打开 dmg 后，将「墨记」拖入「应用程序」文件夹。
 
-> **首次打开被 macOS 拦下？** 墨记当前未做公证签名，首次打开会弹「Apple 无法验证“墨记”是否包含可能危害 Mac 安全或泄漏隐私的恶意软件」。放行方法：
->
-> 1. 打开 **系统设置 → 隐私与安全性**，在「安全性」一栏点「**仍要打开**」；
-> 2. 再打开一次墨记，在弹窗里选「打开」。
->
-> 注意：macOS 15 起旧的「右键 → 打开」已失效，请走上面的「仍要打开」。若提示的是「**已损坏**，无法打开」，可在终端执行：
->
-> ```bash
-> xattr -cr /Applications/墨记.app
-> ```
+安装包以 arm64（Apple 芯片）为主。Intel 机型可自行构建 x64 版本，参见[从源码构建](#从源码构建)。
+
+各版本的更新内容见 [Releases](https://github.com/lixiaoshuang79/momark/releases)。安装后，可在应用内检查并下载更新。
+
+### 首次打开被 macOS 拦截
+
+墨记未经过 Apple 公证。首次打开时，系统会提示「Apple 无法验证“墨记”是否包含可能危害 Mac 安全或泄漏隐私的恶意软件」。放行步骤如下：
+
+1. 打开「系统设置 → 隐私与安全性」，在「安全性」一栏中点击「仍要打开」；
+2. 再次打开墨记，在弹出的对话框中选择「打开」。
+
+自 macOS 15 起，「右键 → 打开」的方式已不再适用。
+
+如果提示为「已损坏，无法打开」，请在终端中执行：
+
+```bash
+xattr -cr /Applications/墨记.app
+```
 
 ## 从源码构建
 
-前置要求：Node.js ≥ 20.19（推荐 22）、pnpm ≥ 10
+环境要求：Node.js ≥ 20.19（推荐 22）、pnpm ≥ 10。
 
 ```bash
 pnpm install
-pnpm build:mac          # 默认 arm64；另有 build:mac:x64
+pnpm build:mac          # 默认构建 arm64；Intel 机型使用 pnpm build:mac:x64
 ```
 
-产物：
+构建产物位于 `dist/` 目录：
 
 - 应用：`dist/mac-arm64/墨记.app`
-- 安装包：`dist/momark-mac-arm64-1.5.6.dmg` / `dist/momark-mac-arm64-1.5.6.zip`
+- 安装包：`dist/momark-mac-arm64-<版本>.dmg` 及同名 `.zip`
 
-## 开发
+开发调试使用 `pnpm dev`，渲染进程运行在 `localhost:9333`。
 
-```bash
-pnpm dev      # 开发实例，渲染进程运行于 localhost:9333
-```
+## 技术栈与仓库结构
 
-技术栈：Electron · Vue 3 · Pinia · TypeScript，pnpm monorepo 组织桌面端与编辑内核。
+Electron 42 · Vue 3.5 · TypeScript（strict）· Pinia · electron-vite 5 · electron-builder 26，以 pnpm monorepo 组织。
 
-## 项目结构
+编辑内核采用块级文档模型：marked 负责 Markdown 解析，ot-json1 与 ot-text-unicode 负责增量更新，snabbdom 负责视图渲染，rxjs 负责事件流。
 
-| 目录               | 说明                                 |
-| ------------------ | ------------------------------------ |
-| `packages/desktop` | Electron 桌面端（主进程 + 渲染进程） |
-| `packages/muya`    | 块级编辑内核（TypeScript）           |
-| `packages/muyajs`  | 编辑内核构建产物                     |
-| `packages/website` | 官网 / 文档站                        |
-| `docs/`            | 分支规范等开发文档                   |
-
-## 更新日志
-
-每个版本的改动见 [Releases](https://github.com/lixiaoshuang79/momark/releases)。
+| 目录               | 说明                                |
+| ------------------ | ----------------------------------- |
+| `packages/desktop` | 桌面端（Electron 主进程与渲染进程） |
+| `packages/muya`    | 块级编辑内核（TypeScript）          |
+| `packages/muyajs`  | 旧编辑内核，退役中                  |
+| `packages/website` | 官网与文档站                        |
+| `docs/`            | 开发文档                            |
 
 ## License
 
-项目以 [AGPL-3.0](LICENSE) 授权；源自上游的部分仍为 MIT，见 [NOTICE.md](NOTICE.md)。
-
-> 效果预览中的生物学插图来自 Wikimedia Commons（公有领域 / CC BY-SA 3.0），逐图来源与授权见 [docs/screenshots/figure-sources.txt](docs/screenshots/figure-sources.txt)。
+本项目以 [AGPL-3.0-only](LICENSE) 许可发布。部分代码沿用 MIT 许可，适用范围见 [NOTICE.md](NOTICE.md)。
