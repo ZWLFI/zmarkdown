@@ -59,7 +59,7 @@ Requests that recur often, such as "unclear, rephrase" or "cut this", can be sav
 
 ### Copying and verifying
 
-![Left: the copied text, structured into section path and line number, quoted original, surrounding paragraph, and requested change. Right: the annotation panel after the AI's edit, with the first two entries marked "content changed" and the third "unchanged"](docs/readme/handoff-en.png)
+![Left: the copied text, structured into section path and line number, quoted original, surrounding paragraph, and requested change. Right: the annotation panel after the AI's edit, with the first two entries marked "content changed" and the third "content unchanged"](docs/readme/handoff-en.png)
 
 When a round of review is complete, click Copy all annotations (复制所有标注) to produce structured text. Each entry contains the section path, line number, quoted original, surrounding paragraph and requested change. Pasted into an AI agent, this text lets each change be located precisely.
 
