@@ -1,115 +1,120 @@
 <div align="center">
 
-<img src="docs/hero-banner.png" alt="MoMark (墨记): everything you need while writing, in one window" width="100%" />
+<img src="docs/readme/hero-en.png" alt="墨记 MoMark: a Chinese-first Markdown editor for macOS. In the window on the right, an html block inside a product spec is running a share-card prototype" width="100%" />
 
-[中文](README.md) | **English**
+[中文](README.md) · **English**
 
-# MoMark 墨记
-
-A Chinese-first Markdown editor for macOS
-
-<a href="https://github.com/lixiaoshuang79/momark/releases/latest"><img src="https://img.shields.io/badge/version-1.5.6-3D5A80" alt="version" /></a>
-<img src="https://img.shields.io/badge/platform-macOS%20arm64%20%7C%20x64-4f5a69" alt="platform" />
-<a href="LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0-7fa6cc" alt="license" /></a>
-<a href="https://github.com/lixiaoshuang79/momark/stargazers"><img src="https://img.shields.io/github/stars/lixiaoshuang79/momark?style=social" alt="stars" /></a>
+<a href="https://github.com/lixiaoshuang79/momark/releases/latest"><img src="https://img.shields.io/badge/version-1.5.6-3D5A80" alt="version 1.5.6" /></a>
+<img src="https://img.shields.io/badge/macOS-arm64%20%7C%20x64-4f5a69" alt="macOS arm64 / x64" />
+<a href="LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0-7fa6cc" alt="license AGPL-3.0" /></a>
 
 </div>
 
-MoMark is a one-person project. It runs on macOS only, for now.
+MoMark (墨记) is a Markdown editor for macOS, built Chinese-first. I make it alone, mostly for my own writing.
 
-Writing a spec, a report, anything long, your material ends up scattered. Research sits in a browser, reference docs in another window, charts in some other tool, review comments somewhere in a chat thread. MoMark tries to pull all of that back into one window. The right pane holds a web page or a second document. Charts and clickable prototypes go into `html` blocks and run inside the document. And when an AI is doing the revising, you annotate the text point by point and hand over the whole batch at once.
+What I write most is product specs. A decent spec needs a prototype you can click, reference pages open while you write, and these days a round of edits handed to an AI. That used to mean juggling several windows. MoMark keeps it in one:
 
-It's Chinese-first, and a lot of that work went into the least visible part: IME input. Typing in a table cell, or committing text in a soft-wrapped paragraph, doesn't drop characters or throw the cursor around.
+- the prototype lives in the document as an `html` block, and runs there;
+- the side panel holds a web page, or a second document;
+- review notes are pinned to the exact text, then copied to your AI in one go.
 
-## What's different
+One more thing, easy to overlook and the part I'm fussiest about: Chinese input. Typing in a table cell, committing text right at a line wrap: no lost characters, no jumping cursor.
 
-### HTML blocks are live
+[Download 1.5.6](https://github.com/lixiaoshuang79/momark/releases/latest) · [Blocked on first launch?](#if-macos-blocks-the-first-launch) · [Build from source](#build-from-source)
 
-Write an `html` code block and MoMark shows the rendered result, not the source. Charts and clickable prototypes sit right in the document. A prototype in a spec no longer needs its own link.
+## html blocks that actually run
 
-**Blocks can include `<script>`, and it runs.** The whole block executes inside a `sandbox="allow-scripts"` iframe. Scripts can't reach the editor or the document, and can't touch your local files.
+![Left: an html code block, script included, as stored in the .md file. Right: the same block in MoMark, rendered as an interactive share-card prototype with a zoom bar in its corner](docs/readme/html-block-en.png)
 
-<img src="docs/screenshots/data-report.png" alt="A data report with interactive charts rendered inside the document" width="760" />
+Write an `html` code block in your `.md` and MoMark shows what it renders, not the source. On the left is what the file really contains; on the right is what you see when you open it. A prototype in a spec, a chart in a data report: it sits right in the text, no separate link to send along.
 
-<sub>A data report. Both charts are html blocks in the document; this is what you see when you open it.</sub>
+`<script>` tags run too. Getting a script to run is easy. Keeping it inside its own box is the actual work:
 
-- Control bar in the bottom-right corner: zoom from 50% to 200%, drag to resize the viewport. The preview height follows the content, from 60 to 1200px.
-- The size and zoom you set are saved with the document. Reopen it and nothing has moved.
-- The HTML and its script live inside the `.md` file. Send that one file to someone, open it offline, it still renders.
-- Already have an `.html` file? Paste it in. A bubble asks what you want. Embed it in the document: styles, scripts and images from the same folder get inlined, and you end up with a single `.md`. Or upload it and insert a link: it goes through the upload service you've configured, and only the link stays in the doc.
-- Export to HTML and the block is still a live sandboxed frame. Double-click the file and you can click around and switch tabs; the bottom-right toolbar still zooms and resizes. Export to PDF or Word and it becomes a proportional snapshot, exactly what was on screen.
+![Three nested layers: main process, editor renderer, and the html block's iframe. Lines from the block's script toward the editor UI, the document, and local files are all stopped at the iframe edge](docs/readme/sandbox-en.png)
 
-### The right pane: a web page, or another document
+- The whole html block runs inside an iframe with `sandbox="allow-scripts"`. Its scripts can't reach the editor UI or the document, and can't touch local files.
+- One layer out, the editor's own renderer runs with `sandbox: true` and `contextIsolation`. Anything that needs Node goes through a `contextBridge` allowlist, and nowhere else.
 
-The right pane has two modes, web and document. One click switches between them.
+Day to day:
 
-Web mode is a small browser. Its own tabs and address bar, several pages to flip between, back and forward. Zoom with ⌘+ / ⌘- / ⌘0, anywhere from 0.25× to 3×, or fit to width. Looking something up doesn't mean leaving the window.
+- A control bar in the bottom-right corner zooms from 50% to 200%; drag the corner to resize the viewport. The preview height follows the content, between 60 and 1200 px.
+- The size and zoom you set are saved with the document. Next time it opens the same way.
+- The HTML and its scripts are written into the `.md` itself. Send one file; it renders offline on the other end.
+- Already have an `.html` file? Paste it in. A popover offers two ways: embed it in the document, which inlines the stylesheets, scripts and images from the same folder and turns it into a single `.md`; or upload it and insert a link, which goes through the upload service you've configured and leaves just a link in the document.
+- Export to HTML and the block stays a live sandboxed frame: clickable, tabs still switch, the corner toolbar still zooms and resizes. Export to PDF or Word and it becomes a proportional snapshot, exactly as it looked on screen.
 
-<img src="docs/screenshots/prd-with-web.png" alt="A spec on the left, a web page in the right pane" width="760" />
+## Review notes your AI can act on
 
-<sub>Writing and looking things up. A spec on the left, technical docs open in the web pane.</sub>
+When you ask an AI to revise a document, the hard part is rarely the revising. It's saying where. "That paragraph in section three", "the number up top": it often edits the wrong spot.
 
-Document mode holds a second Markdown file. Drag a tab out and it lands in the right pane, and you edit both side by side. The scrollbar sits in the divider between them, not on top of your text.
+![Three passages in the editor carry a faint ink-blue highlight and a number; an annotation card offers saved phrases like 删掉 ("cut this"); the side panel lists all three notes above the 复制所有标注 ("copy all annotations") button](docs/readme/annotate-en.png)
 
-<img src="docs/screenshots/split-docs.png" alt="Two documents side by side" width="760" />
+Select a passage, click the annotate button (标注) in the toolbar, write one line. The text keeps only a faint ink-blue highlight and a number; the annotations panel on the right lists every note.
 
-<sub>Two documents side by side. Notes on the left, the data report on the right, its charts still rendering.</sub>
+Things you say over and over, like "unclear, rephrase" or "cut this", can be saved as phrases. Select text, click once, done.
 
-### Annotations an AI can act on
+When the round is complete, copy them all with one click:
 
-This one is for people who revise with an AI. The hard part usually isn't the rewrite. It's telling the model where. "That paragraph in section three" lands on the wrong paragraph more often than it should.
+![Left: the copied text, structured into section path and line number, quoted original, surrounding paragraph, and request. Right: the annotation panel after the AI's edit, the first two marked "content changed", the third "unchanged"](docs/readme/handoff-en.png)
 
-1. Select a passage, hit annotate on the toolbar, write one line about what should change. The text gets a light ink-blue highlight and a number; the annotations panel in the right pane keeps track of every note.
-2. When the round is done, copy everything with one click. You get structured text: section path, line number, the quoted original, the surrounding paragraph, your request. Paste it straight into an AI agent.
-3. Copied notes are marked as copied. Once the AI has edited the file, MoMark compares and tells you, note by note, whether the content changed. Check them off and archive them to history.
+What lands on the clipboard is structured: section path, line number, the quoted original, the surrounding paragraph, and your request. Paste the whole thing into an AI agent and it doesn't have to guess where each change goes.
 
-Annotations live in the app's data directory. **Not a single character goes into the `.md`.** The document you hand over stays clean.
+Notes you've copied are marked as copied. After the AI edits the document, MoMark compares against the original and tells you, note by note, whether the content changed or not. Anything it skipped stands out. Once checked, they move to the history tab.
 
-Requests you make all the time, like "cite a source for this number", can be saved as phrase chips. Select text, click a chip, and the annotation is done.
+Annotations are stored in the app's data folder. Not one character is written into the `.md`. I don't want review marks mixed into the source; the file you hand over should be clean.
 
-### Chinese input
+## The side panel: a small browser, or a second document
 
-In Chinese, a keystroke isn't a character. You type pinyin, the IME holds it in a composition window, and characters only get committed when you pick a candidate. If the editor re-renders while that's happening, the commit can get lost, or the caret ends up somewhere else. Editors that draw their own view are where this bites hardest, and it's easy to miss if you never type CJK.
+![A spec on the left; the side panel in web mode shows a reference article, with three page tabs stacked on its right edge and an address bar at the bottom; a tab is being dragged toward the panel](docs/readme/side-panel-en.png)
 
-MoMark fixes two spots where this goes wrong:
+The right-hand panel has two modes, Web and Doc, one click apart.
 
-- IME input inside table cells, fixed along the whole input path.
-- In soft-wrapped paragraphs, whatever the IME commits is kept intact.
+Web mode has its own tabs and address bar: switch between pages, go back and forward. ⌘+ / ⌘- / ⌘0 zoom from 0.25× to 3×, or just fit to width. Research without leaving the window.
 
-The result is plain: you write Chinese, no characters go missing, the cursor stays where it was.
+Doc mode holds another Markdown file. Drag a tab into the panel and the two documents sit side by side, both editable. The scrollbar lives on the divider between them, out of the text's way.
 
-The UI ships with more than ten languages, Chinese first. The Chinese UI text was redone from scratch, not lifted from an off-the-shelf translation.
+## Chinese input
 
-## Everything else
+![Top: the three IME steps, pinyin held in the input method, picking a candidate, committing. Bottom: pinyin being typed inside a table cell with a candidate list open, and pinyin being typed right at a soft line wrap](docs/readme/ime-en.png)
 
-| Area         | What's there                                                                                                                                                                                             |
-| ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Markdown     | CommonMark, GitHub Flavored Markdown; KaTeX math; Mermaid and PlantUML diagrams                                                                                                                          |
-| Modes        | Source mode, typewriter mode, focus mode                                                                                                                                                                 |
-| Editing core | Block-based document model. Incremental updates with ot-json1 + ot-text-unicode, snabbdom for the view layer, marked for parsing, rxjs for event streams                                                 |
-| Look         | Ink blue `#3D5A80` as the main color; light and dark themes; asymmetric sidebar motion; hairline scrollbars that show up while you scroll                                                                |
-| Export       | HTML, PDF, Word                                                                                                                                                                                          |
-| Day to day   | Command palette, full-text search, image upload (through the upload service you configure), in-app update check and download                                                                             |
-| Isolation    | Fully sandboxed renderer (`contextIsolation`, `sandbox: true`); Node capabilities exposed only through a `contextBridge` allowlist. Its own data directory, so it never gets in the way of other editors |
+Chinese isn't one key, one character. You type pinyin, it waits in the input method, and only when you pick a candidate does the text get committed to the document. If the editor redraws at that moment, characters can vanish and the cursor can jump.
 
-<img src="docs/screenshots/notes-biology.png" alt="Illustrated notes: a table and color figures in one document" width="760" />
+MoMark fixed two places where that happens:
 
-<sub>Illustrated notes. A table and color figures in the same document.</sub>
+- IME input inside table cells, fixed along the whole path;
+- in long soft-wrapped paragraphs, text committed by the input method is kept intact.
+
+The result: no lost characters, no jumping cursor. People tend to blame the input method for this kind of bug. It's usually the editor failing to catch the commit.
+
+The interface ships with more than ten languages, Chinese first. The Chinese UI was reworked by hand, not a translation file dropped in.
+
+## Also included
+
+| Area          | What's there                                                                                                                                 |
+| ------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| Markdown      | CommonMark, GitHub Flavored Markdown; KaTeX math; Mermaid and PlantUML diagrams                                                              |
+| Editing modes | Source mode, typewriter mode, focus mode                                                                                                     |
+| Export        | HTML, PDF, Word                                                                                                                              |
+| Everyday      | Command palette, full-text search, image upload (through the upload service you configure), in-app update check and download                 |
+| Look          | Ink blue `#3D5A80` as the main color, light and dark themes; asymmetric sidebar motion; hairline scrollbars that appear only while scrolling |
+| Data          | Its own data folder, so it never collides with other editors                                                                                 |
 
 ## Install
 
-Download the dmg or zip from [Releases](https://github.com/lixiaoshuang79/momark/releases/latest). Open the dmg and drag 墨记 into Applications. 墨记 is MoMark's app name on disk, so that's what you'll see in Finder.
+Download the dmg or zip from [Releases](https://github.com/lixiaoshuang79/momark/releases/latest). Open the dmg and drag 墨记 into Applications.
 
-### macOS blocks it on first launch
+Builds are primarily arm64 (Apple silicon). On an Intel Mac you can build the x64 version yourself; see [Build from source](#build-from-source).
 
-MoMark isn't notarized by Apple. The first time you open it, macOS says Apple could not verify “墨记” is free of malware that may harm your Mac or compromise your privacy. To let it through:
+### If macOS blocks the first launch
 
-1. Open System Settings → Privacy & Security, and in the Security section click **Open Anyway**.
-2. Open MoMark again and choose Open in the dialog.
+MoMark isn't notarized by Apple. The first time you open it, macOS says it can't verify that "墨记" is free of malware that may harm your Mac or compromise your privacy. To let it through:
 
-Since macOS 15 the old right-click → Open trick no longer works, so don't bother with it.
+1. Open System Settings → Privacy & Security, and under Security click "Open Anyway".
+2. Open MoMark again and choose "Open" in the dialog.
 
-If the message says the app is damaged and can't be opened, run this in Terminal:
+Since macOS 15, the old right-click → Open trick no longer works, so don't bother.
+
+If the message says the app "is damaged and can't be opened", run this in Terminal:
 
 ```bash
 xattr -cr /Applications/墨记.app
@@ -121,7 +126,7 @@ Requires Node.js ≥ 20.19 (22 recommended) and pnpm ≥ 10.
 
 ```bash
 pnpm install
-pnpm build:mac          # arm64 by default; for Intel Macs use pnpm build:mac:x64
+pnpm build:mac          # arm64 by default; for Intel use pnpm build:mac:x64
 ```
 
 Output:
@@ -129,30 +134,26 @@ Output:
 - App: `dist/mac-arm64/墨记.app`
 - Installers: `dist/momark-mac-arm64-1.5.6.dmg`, `dist/momark-mac-arm64-1.5.6.zip`
 
-## Development
+For development, `pnpm dev` runs the renderer on `localhost:9333`.
 
-```bash
-pnpm dev                # dev instance; the renderer runs on localhost:9333
-```
+## Stack and repository layout
 
-Stack: Electron 42 · Vue 3.5 · TypeScript (strict) · Pinia · electron-vite 5 · electron-builder 26, organized as a pnpm monorepo.
+Electron 42 · Vue 3.5 · TypeScript (strict) · Pinia · electron-vite 5 · electron-builder 26, organized as a pnpm monorepo.
 
-## Project structure
+The editing core is a block-level document model: marked parses Markdown, ot-json1 + ot-text-unicode apply incremental updates, snabbdom renders the view, rxjs carries the event streams.
 
-| Directory          | What it is                                     |
-| ------------------ | ---------------------------------------------- |
-| `packages/desktop` | Electron desktop app (main process + renderer) |
-| `packages/muya`    | Block-based editing core (TypeScript)          |
-| `packages/muyajs`  | Previous editing core, being retired           |
-| `packages/website` | Website / documentation site                   |
-| `docs/`            | Developer docs                                 |
+| Directory          | What it is                                       |
+| ------------------ | ------------------------------------------------ |
+| `packages/desktop` | Desktop app (Electron main + renderer processes) |
+| `packages/muya`    | Block-level editing core (TypeScript)            |
+| `packages/muyajs`  | Previous editing core, being retired             |
+| `packages/website` | Website / docs site                              |
+| `docs/`            | Developer docs                                   |
 
-## Changelog
+## Releases
 
 Current version: 1.5.6, released 2026-10-13. What changed in each version is on the [Releases](https://github.com/lixiaoshuang79/momark/releases) page.
 
 ## License
 
-[AGPL-3.0-only](LICENSE). Some of the code remains under the MIT license; see [NOTICE.md](NOTICE.md) for the scope.
-
-The biology illustrations in the screenshots on this page come from Wikimedia Commons (public domain / CC BY-SA 3.0). Per-image sources and licenses: [docs/screenshots/figure-sources.txt](docs/screenshots/figure-sources.txt).
+[AGPL-3.0-only](LICENSE). Some code remains under the MIT license; see [NOTICE.md](NOTICE.md) for the scope.
