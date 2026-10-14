@@ -1,4 +1,4 @@
-import type { Token } from 'marked';
+import type { Token, Tokens } from 'marked';
 import type { IFrontmatterToken, ILexOption, TLexedToken } from './types';
 import { Marked } from 'marked';
 import compatibleTaskList from './compatibleTaskList';
@@ -7,6 +7,48 @@ import mathExtension from './extensions/math';
 import fm from './frontMatter';
 import { DEFAULT_OPTIONS } from './options';
 import walkTokens from './walkTokens';
+
+type TChildTokens = Record<string, string[]> | undefined;
+
+// Same visiting order as `Marked#walkTokens` (callback first, then table cells,
+// list items, extension `childTokens` or `tokens`). marked's version concats
+// every callback result into one array as it goes — copying the accumulated
+// array once per token — which is quadratic in document size; we only need the
+// side effects, so visit in place.
+function visitTokens(tokens: Token[], visit: (token: Token) => void, childTokens: TChildTokens) {
+    for (const token of tokens) {
+        visit(token);
+        switch (token.type) {
+            case 'table': {
+                const { header, rows } = token as Tokens.Table;
+                for (const cell of header)
+                    visitTokens(cell.tokens, visit, childTokens);
+                for (const row of rows) {
+                    for (const cell of row)
+                        visitTokens(cell.tokens, visit, childTokens);
+                }
+                break;
+            }
+
+            case 'list':
+                visitTokens((token as Tokens.List).items, visit, childTokens);
+                break;
+
+            default: {
+                const names = childTokens?.[token.type];
+                if (names) {
+                    for (const name of names) {
+                        const children = (token as Record<string, unknown>)[name] as unknown[];
+                        visitTokens(children.flat(Infinity) as Token[], visit, childTokens);
+                    }
+                }
+                else if ('tokens' in token && token.tokens) {
+                    visitTokens(token.tokens, visit, childTokens);
+                }
+            }
+        }
+    }
+}
 
 export function lexBlock(
     src: string,
@@ -53,7 +95,7 @@ export function lexBlock(
     // are picked up; the no-arg constructor would fall back to global defaults.
     tokens.push(...new m.Lexer(m.defaults).blockTokens(src));
     tokens = compatibleTaskList(tokens as Token[]);
-    m.walkTokens(tokens as Token[], walkTokens(options));
+    visitTokens(tokens as Token[], walkTokens(options), m.defaults.extensions?.childTokens);
 
     // After walkTokens / compatibleTaskList run, marked's Heading/List/ListItem
     // tokens have been augmented with muya-specific fields (headingStyle,

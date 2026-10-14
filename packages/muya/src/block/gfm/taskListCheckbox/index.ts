@@ -114,7 +114,9 @@ function rederiveAncestors(item: TaskListItem): void {
 class TaskListCheckbox extends TreeNode {
     private _checked: boolean;
 
-    private _eventIds: string[] = [];
+    // Bound on this block's own element, not via `eventCenter`: see the note
+    // in headingCopyLink — the central table outlives replaced documents.
+    private _clickHandler: Nullable<EventListener> = null;
 
     static override blockName = 'task-list-checkbox';
 
@@ -156,8 +158,7 @@ class TaskListCheckbox extends TreeNode {
     }
 
     listen() {
-        const { domNode, muya } = this;
-        const { eventCenter } = muya;
+        const { domNode } = this;
         const clickHandler = (event: Event) => {
             if (!isMouseEvent(event))
                 return;
@@ -181,11 +182,8 @@ class TaskListCheckbox extends TreeNode {
             (this.parent as TaskListItem).firstContentInDescendant()?.setCursor(0, 0, true);
         };
 
-        const eventIds = [
-            eventCenter.attachDOMEvent(domNode!, 'click', clickHandler),
-        ];
-
-        this._eventIds.push(...eventIds);
+        this._clickHandler = clickHandler;
+        domNode!.addEventListener('click', clickHandler);
     }
 
     update = (checked: boolean, source = 'api') => {
@@ -239,8 +237,9 @@ class TaskListCheckbox extends TreeNode {
     }
 
     private _detachDOMEvents() {
-        for (const id of this._eventIds)
-            this.muya.eventCenter.detachDOMEvent(id);
+        if (this._clickHandler)
+            this.domNode?.removeEventListener('click', this._clickHandler);
+        this._clickHandler = null;
     }
 
     override remove(_source: string) {
