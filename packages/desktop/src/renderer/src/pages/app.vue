@@ -81,13 +81,25 @@ import { useLayoutStore } from '@/store/layout'
 import { useListenForMainStore } from '@/store/listenForMain'
 import { usePreferencesStore } from '@/store/preferences'
 
-// round9 滚动条极简 overlay：滚动进行中给 body 挂 .scroll-engaged
-// （任何滚动容器的 scroll 事件捕获），停止 650ms 后移除——滑块随之淡入/淡出。
-let scrollEngageTimer: ReturnType<typeof setTimeout> | undefined
-const engageScrollbars = () => {
-  document.body.classList.add('scroll-engaged')
-  clearTimeout(scrollEngageTimer)
-  scrollEngageTimer = setTimeout(() => document.body.classList.remove('scroll-engaged'), 650)
+// round9 滚动条极简 overlay：哪个容器在滚，就给哪个容器标上 data-scroll-engaged
+// （window 捕获阶段统一接 scroll 事件），停止 650ms 后移除——它自己的滑块随之
+// 淡入/淡出。
+// 用属性、只标滚动容器自身，都是为了不触发整篇样式重算：全局样式里有
+// Element Plus 的 `[class*=…]` 后代选择器，任何元素的 class 一变，Blink 都要把
+// 它所有带 class 的后代作废重算——原先每次滚动开始/结束给 body 加减类名，2MB
+// 文档每次约 0.8s（2026-10-15 实测 37.5 万元素），滚动时成串卡顿。data-* 属性
+// 只命中 assets/styles/index.css 里那条滑块规则，失效范围只有滚动容器自己。
+const scrollEngageTimers = new WeakMap<Element, ReturnType<typeof setTimeout>>()
+const engageScrollbars = (event: Event) => {
+  const scroller = event.target instanceof Element ? event.target : document.scrollingElement
+  if (!scroller) return
+  if (!scroller.hasAttribute('data-scroll-engaged'))
+    scroller.setAttribute('data-scroll-engaged', '')
+  clearTimeout(scrollEngageTimers.get(scroller))
+  scrollEngageTimers.set(
+    scroller,
+    setTimeout(() => scroller.removeAttribute('data-scroll-engaged'), 650)
+  )
 }
 window.addEventListener('scroll', engageScrollbars, { capture: true, passive: true })
 onBeforeUnmount(() => {
