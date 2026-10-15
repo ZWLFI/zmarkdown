@@ -70,6 +70,11 @@ export default defineConfig({
     // statements without pulling in Node's path module. `pathe` always uses
     // `/` separators and handles Windows drive letters correctly.
     assetsInclude: ['**/*.md'],
+    // electron-vite 默认不压缩 renderer。窗口从 file:// 加载，Chromium 不给 file: 脚本做 V8 代码缓存，
+    // 每开一个窗口都要重新解析整个入口 chunk：压缩后入口 7.27MB → 3.74MB，单窗口 JS 堆少约 5MB。
+    build: {
+      minify: 'esbuild'
+    },
     // Some bundled deps (e.g. `custom-event` via `dragula`) reference the
     // Node-only `global` at module load — undefined in a sandboxed renderer.
     // Substitute it with `globalThis` at build time so the imports don't
