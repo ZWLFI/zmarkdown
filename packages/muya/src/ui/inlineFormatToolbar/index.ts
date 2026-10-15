@@ -119,6 +119,10 @@ export class InlineFormatToolbar extends BaseFloat {
 
         eventCenter.subscribe('muya-format-picker', ({ reference, block }) => {
             if (reference) {
+                // 兜底：非 Format 块没有 `getFormatsInRange`。事件源已按 Format 收口，
+                // 这里防御未来新增的事件源再次触发同一崩溃（issue #1）。
+                if (!(block instanceof Format))
+                    return;
                 this._block = block;
                 this._formats = block.getFormatsInRange().formats;
                 requestAnimationFrame(() => {
@@ -182,6 +186,11 @@ export class InlineFormatToolbar extends BaseFloat {
 
                 if (selection.isSelectionInSameBlock) {
                     const block = selection.anchor.block;
+                    // 代码块正文（`CodeBlockContent extends Content`）等非 Format 块没有
+                    // 格式能力：格式工具条对它们无意义，不弹（1.5.1 之前的行为）；直接
+                    // 下发会让订阅端把非 Format 块当 Format 用（issue #1 的渲染进程崩溃）。
+                    if (!(block instanceof Format))
+                        return;
                     const reference = getCursorReference();
                     if (reference && block)
                         this.muya.eventCenter.emit('muya-format-picker', { reference, block });
