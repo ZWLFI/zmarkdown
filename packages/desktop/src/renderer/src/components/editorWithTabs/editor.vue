@@ -762,13 +762,22 @@ watch(typewriter, (value) => {
 // 带 `fromEngine` 的写入里落下），这次变化必然由引擎自己产生，直接返回，一次
 // 序列化都省下。右栏 docMode / 源码模式 / 磁盘重载写的值不命中，仍走下面的
 // 字符串兜底比较。
+//
+// 换标签（打开 / 切换 / 关标签换人）时当前标签 id 变了：那份 markdown 已由
+// `file-changed` / `file-loaded` 装进引擎，这里再比较就是白白整篇序列化一次——
+// 文件原文与引擎规范形态（表格补齐等）不一致时还会再 setContent 一遍，并把
+// handleFileChange 刚恢复的光标 / 撤销历史冲掉。只在 id 不变时同步。
 watch(
-  () => {
-    const id = editorStore.currentFile?.id
-    if (!id) return null
-    return editorStore.tabs.find((t) => t.id === id)?.markdown
-  },
-  (md) => {
+  [
+    () => editorStore.currentFile?.id,
+    () => {
+      const id = editorStore.currentFile?.id
+      if (!id) return null
+      return editorStore.tabs.find((t) => t.id === id)?.markdown
+    }
+  ],
+  ([id, md], [prevId]) => {
+    if (id !== prevId) return
     if (typeof md !== 'string' || !editor.value) return
     const tab = editorStore.tabs.find((t) => t.id === editorStore.currentFile?.id)
     if (!tab) return
@@ -1068,7 +1077,10 @@ watch(spellcheckerLanguage, (value, oldValue) => {
 
 watch(currentFile, (value, oldValue) => {
   if (value && value !== oldValue) {
-    scrollToCursor(0)
+    // No scroll here: every currentFile change comes with a `file-changed`
+    // whose handler restores the tab's scroll position (or reveals the caret).
+    // A `scrollToCursor` from here ran first and was then overwritten by that
+    // restore, but still forced a synchronous layout of the whole new document.
     // Hide float tools if needed.
     if (editor.value) {
       editor.value.hideAllFloatTools()
@@ -1828,6 +1840,19 @@ interface FileLoadedPayload {
   cursor?: unknown
 }
 
+// Content `handleFileChange` loaded via `setContent` in the current task (no
+// edit can land in between). Cleared on the next microtask.
+let justLoaded: { id: string; markdown: string } | null = null
+const markJustLoaded = (id: string | undefined, markdown: string) => {
+  if (!id) return
+  justLoaded = { id, markdown }
+  queueMicrotask(() => {
+    justLoaded = null
+  })
+}
+const isJustLoaded = (id: string | undefined, markdown: string) =>
+  !!id && justLoaded?.id === id && justLoaded.markdown === markdown
+
 // listen for `open-single-file` event, it will call this method only when open a new file.
 const setMarkdownToEditor = (payload: unknown) => {
   const { id, markdown: newMarkdown, cursor: newCursor } = (payload ?? {}) as FileLoadedPayload
@@ -1835,7 +1860,12 @@ const setMarkdownToEditor = (payload: unknown) => {
     lastTabId.value = id ?? null
     // `setContent` resets the document and clears the undo history; only set a
     // cursor afterwards (a freshly-opened file has no history to restore).
-    editor.value.setContent(newMarkdown ?? '')
+    // A new tab is selected via UPDATE_CURRENT_FILE, whose `file-changed` has
+    // already loaded this exact content in the same task — don't parse and
+    // render the whole document a second time.
+    if (!isJustLoaded(id, newMarkdown ?? '')) {
+      editor.value.setContent(newMarkdown ?? '')
+    }
     // The freshly loaded content is this tab's clean baseline (id 0). Re-seed
     // the monotonic save-tracking allocator so undoing an edit back to this
     // content reads as clean again (matches the store's `lastSavedHistoryId: 0`).
@@ -1968,6 +1998,7 @@ const handleFileChange = (payload: unknown) => {
       // 切换动效已移交给 tabs.vue：正文整屏滑出窗口边缘（点击标签路径）。
       // 本处只做同步换文，不再有逐行进出动画。
       editor.value.setContent(newMarkdown)
+      markJustLoaded(id, newMarkdown)
       lastTabId.value = id ?? null
       // Tab switch swaps content without firing `json-change`, so re-seed the
       // TOC (otherwise returning to an open tab keeps the other tab's TOC).
@@ -1989,7 +2020,7 @@ const handleFileChange = (payload: unknown) => {
       // seed its clean baseline from the engine's serialization now, before
       // any edit. For a tab that already has a tracker this is a no-op —
       // switching back must keep the existing content -> id map.
-      if (id) {
+      if (id && !syntheticHistoryByTab.has(id)) {
         getSyntheticHistory(id, editor.value.getMarkdown())
       }
     }

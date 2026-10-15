@@ -24,17 +24,7 @@ export class LinkedList<T extends ILinkedNode> {
     }
 
     contains(node: T) {
-        const it = this.iterator();
-        let data = null;
-
-        // eslint-disable-next-line no-cond-assign
-        while ((data = it.next()).done !== true) {
-            const { value } = data;
-            if (value === node)
-                return true;
-        }
-
-        return false;
+        return this.offset(node) !== -1;
     }
 
     insertBefore(node: T, refNode: T | null = null) {
@@ -62,8 +52,18 @@ export class LinkedList<T extends ILinkedNode> {
         this.length += 1;
     }
 
+    // Plain pointer walk (same `length` bound as `iterator`). `block.path`
+    // calls this once per ancestor, so the old generator + spread-array version
+    // dominated whole-document traversals on large files.
     offset(node: T) {
-        return [...this.iterator()].indexOf(node);
+        let cur = this.head;
+        for (let i = 0; i < this.length && cur; i++) {
+            if (cur === node)
+                return i;
+            cur = cur.next as T;
+        }
+
+        return -1;
     }
 
     remove(node: T) {
@@ -89,7 +89,11 @@ export class LinkedList<T extends ILinkedNode> {
         if (index < 0 || index >= this.length)
             return null;
 
-        return [...this.iterator()][index];
+        let cur = this.head;
+        for (let i = 0; i < index && cur; i++)
+            cur = cur.next as T;
+
+        return cur ?? undefined;
     }
 
     forEach(callback: (cur: T, i: number) => void) {
@@ -109,9 +113,7 @@ export class LinkedList<T extends ILinkedNode> {
     }
 
     map<M>(callback: (cur: T, i: number) => M): M[] {
-        return this.reduce((acc: M[], node: T, i: number) => {
-            return [...acc, callback(node, i)];
-        }, []);
+        return [...this.iterator()].map(callback);
     }
 
     reduce<M>(callback: (memo: M, cur: T, i: number) => M, memo: M): M {

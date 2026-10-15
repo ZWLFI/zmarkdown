@@ -11,7 +11,12 @@
 
     <!-- round9（用户拍板）：标签条任何场景都渲染（单文档也显示标签，
          拖回标签栏后文档标签立即可见）。 -->
-    <div ref="tabContainer" class="tabstrip">
+    <div
+      ref="tabContainer"
+      class="tabstrip"
+      :class="{ 'fade-l': overflowLeft, 'fade-r': overflowRight }"
+      @scroll.passive="updateOverflowFade"
+    >
       <div
         v-for="file of visibleTabs"
         :key="file.id"
@@ -24,7 +29,9 @@
         @contextmenu.prevent="handleContextMenu($event, file)"
       >
         <span class="tname">
-          <span class="tn">{{ file.filename }}</span>
+          <span class="tn" :data-label="file.filename">
+            <span class="tn-text">{{ file.filename }}</span>
+          </span>
           <span class="dot" />
         </span>
         <button
@@ -186,11 +193,12 @@ const newUntitled = (): void => {
   editorStore.NEW_UNTITLED_TAB({})
 }
 
-// 滑轨（PHASE2-SPEC §2）：width = max(18px, active.offsetWidth - 20px)，
-// transform = translateX(active.offsetLeft + 10px)。
-// S 型动效（用户反馈去掉回弹）：width 瞬切 + WAAPI 在 transform 层做
-// translateX+scaleX 补偿动画，全程只动画合成层属性，无逐帧 layout。
+// 滑轨（PHASE2-SPEC §2）。S 型动效（用户反馈去掉回弹）：width 瞬切 +
+// WAAPI 在 transform 层做 translateX+scaleX 补偿动画，全程只动画合成层
+// 属性，无逐帧 layout。
 let indicatorAnim: Animation | null = null
+// 上一次落定的目标（内容坐标，px）；几何没变时 ResizeObserver 的重复回调直接跳过。
+let indicatorTarget: { x: number; w: number } | null = null
 const REDUCED_MOTION =
   typeof window.matchMedia === 'function' &&
   window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -202,32 +210,43 @@ const moveIndicator = (animate: boolean): void => {
   const active = strip.querySelector<HTMLElement>('.tab.active')
   if (!active) {
     ind.style.opacity = '0'
+    indicatorTarget = null
     return
   }
-  // round10：指示条精确贴住标签文字（.tname = 文件名 + 未保存圆点），
-  // 不再以整个 .tab 为基准——tab 右侧为 × 按钮预留 30px padding，
-  // 旧算法会把蓝条伸到 × 按钮下方与文字对不齐。
-  const tname = active.querySelector<HTMLElement>('.tname')
-  const offsetLeft = active.offsetLeft + (tname?.offsetLeft ?? 10)
-  const targetW = tname ? tname.offsetWidth : Math.max(18, active.offsetWidth - 20)
-  const targetX = tname ? offsetLeft : active.offsetLeft + 10
+  // 指示条贴住文件名（.tn），不含未保存圆点——置脏/保存时滑轨不伸缩。
+  // .tn 的宽度按活动字号预留（见样式 .tn::after），字号过渡期间盒子不变，
+  // 此刻量到的就是过渡结束后的终态几何。用 rect 而非 offset* 取亚像素值，
+  // offset* 逐级取整会累计出 ±1px 的错位。
+  const label = active.querySelector<HTMLElement>('.tn') ?? active
+  const stripRect = strip.getBoundingClientRect()
+  const labelRect = label.getBoundingClientRect()
+  const targetX = labelRect.left - stripRect.left + strip.scrollLeft
+  const targetW = labelRect.width
+  if (
+    indicatorTarget &&
+    Math.abs(indicatorTarget.x - targetX) < 0.5 &&
+    Math.abs(indicatorTarget.w - targetW) < 0.5
+  ) {
+    return
+  }
+  indicatorTarget = { x: targetX, w: targetW }
+  // 起点 = 当前视觉位置（与终点统一换算到内容坐标，否则标签条滚动后起跳错位）。
+  const curRect = ind.getBoundingClientRect()
+  const curX = curRect.left - stripRect.left + strip.scrollLeft
+  const curW = curRect.width
   if (indicatorAnim) {
     indicatorAnim.cancel()
     indicatorAnim = null
   }
-  if (!animate || REDUCED_MOTION) {
+  if (!animate || REDUCED_MOTION || curW === 0) {
     ind.style.width = `${targetW}px`
     ind.style.transform = `translateX(${targetX}px)`
     ind.style.opacity = '1'
     return
   }
-  // 起点 = 当前视觉位置（含 scroll）；终点 = 内容坐标（CSS 层自动减 scroll）。
-  const stripRect = strip.getBoundingClientRect()
-  const curRect = ind.getBoundingClientRect()
-  const curX = curRect.left - stripRect.left
-  const curW = curRect.width
-  const startX = curW > 0 ? curX : targetX
-  const startSx = curW > 0 ? targetW / curW : 1
+  // transform-origin 在左缘（见样式），scaleX = 当前宽 / 目标宽 即还原起点视觉宽度。
+  const startX = curX
+  const startSx = curW / targetW
   ind.style.width = `${targetW}px`
   ind.style.opacity = '1'
   indicatorAnim = ind.animate(
@@ -343,9 +362,35 @@ watch(
 watch(
   () => tabs.value.map((tab) => tab.id).join(','),
   () => {
-    nextTick(() => moveIndicator(true))
+    nextTick(() => {
+      observeTabSizes()
+      moveIndicator(true)
+    })
   }
 )
+
+// 标签条溢出时在被裁一侧渐隐，避免文件名被硬切在面板开关旁。
+const overflowLeft = ref(false)
+const overflowRight = ref(false)
+const updateOverflowFade = (): void => {
+  const strip = tabContainer.value
+  if (!strip) return
+  overflowLeft.value = strip.scrollLeft > 1
+  overflowRight.value = strip.scrollLeft + strip.clientWidth < strip.scrollWidth - 1
+}
+
+// 观察标签条本体 + 每个标签及其文件名：窗口缩放、字体加载、任一标签
+// 置脏/保存（圆点显隐改变标签宽度、推动后续标签）都会移动活动文件名，
+// 只观察标签条本体（flex:1，宽度恒定）捕捉不到这些变化。
+const observeTabSizes = (): void => {
+  const strip = runtimeTabsEl
+  if (!strip || !resizeObserver) return
+  resizeObserver.disconnect()
+  resizeObserver.observe(strip)
+  strip.querySelectorAll<HTMLElement>('.tab, .tab .tn').forEach((el) => {
+    resizeObserver!.observe(el)
+  })
+}
 
 // 标签条运行时（wheel 滚动 / 拖回投放 / dragula 拖拽 / autoScroll / RO / 滑轨首帧）。
 // round9：标签条所有场景常驻渲染，onMounted 后一次性挂载运行时，
@@ -459,9 +504,11 @@ const setupTabsRuntime = () => {
   // 首帧定位滑轨：无动画（防闪现）。
   nextTick(() => moveIndicator(false))
 
-  // 字体加载/窗口缩放导致标签宽度变化时同步滑轨。
-  resizeObserver = new ResizeObserver(() => moveIndicator(true))
-  resizeObserver.observe(tabsEl)
+  resizeObserver = new ResizeObserver(() => {
+    moveIndicator(true)
+    updateOverflowFade()
+  })
+  observeTabSizes()
 }
 
 const teardownTabsRuntime = () => {
@@ -474,6 +521,7 @@ const teardownTabsRuntime = () => {
     resizeObserver.disconnect()
     resizeObserver = null
   }
+  indicatorTarget = null
   if (autoScroller) {
     // Force destroy
     autoScroller.destroy(true)
@@ -609,6 +657,21 @@ onBeforeUnmount(() => {
 .tabstrip::-webkit-scrollbar {
   display: none;
 }
+.tabstrip.fade-l {
+  mask-image: linear-gradient(to right, transparent, #000 24px);
+}
+.tabstrip.fade-r {
+  mask-image: linear-gradient(to left, transparent, #000 24px);
+}
+.tabstrip.fade-l.fade-r {
+  mask-image: linear-gradient(
+    to right,
+    transparent,
+    #000 24px,
+    #000 calc(100% - 24px),
+    transparent
+  );
+}
 
 /* round12（用户拍板）：新建标签按钮——常驻标签条尾部占位、hover 标签条时
    淡显；点击新建 untitled。 */
@@ -655,7 +718,10 @@ onBeforeUnmount(() => {
   border-radius: 8px 8px 0 0;
   cursor: pointer;
   user-select: none;
-  padding: 0 30px 0 12px;
+  /* 左右等距：文件名与指示条落在标签底色的中线上。原型的 12px / 30px
+     不对称内距（右侧为 × 预留）在 × 隐藏时让文字和蓝条整体偏左；
+     × 现在收进右侧 22px 内距里（right:3px + 18px），不压文字。 */
+  padding: 0 22px;
   display: flex;
   align-items: center;
   gap: 7px;
@@ -692,8 +758,27 @@ onBeforeUnmount(() => {
   transition: font-size 0.3s var(--ease-tab-enter);
 }
 
-/* 文件名文字层：省略号截断（round13，防超长溢出压到面板开关）。 */
+/* 文件名层：可见文字与隐形占位叠在同一格，盒宽恒为「活动字号下的文件名
+   宽度」。字号过渡只在盒内发生，切换标签时标签宽度不变、后续标签不跟着
+   挪动，指示条在切换瞬间量到的就是终态几何。 */
 .tab .tname .tn {
+  display: grid;
+  justify-items: center;
+  min-width: 0;
+}
+.tab .tname .tn::after {
+  content: attr(data-label);
+  grid-area: 1 / 1;
+  font-size: var(--f12);
+  white-space: nowrap;
+  height: 0;
+  overflow: hidden;
+  visibility: hidden;
+}
+/* 可见文字：省略号截断（round13，防超长溢出压到面板开关）。 */
+.tab .tname .tn-text {
+  grid-area: 1 / 1;
+  max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -717,6 +802,7 @@ onBeforeUnmount(() => {
   pointer-events: none;
   z-index: 3;
   opacity: 0;
+  transform-origin: 0 50%;
   transition: opacity 0.16s ease;
 }
 
@@ -736,7 +822,7 @@ onBeforeUnmount(() => {
 /* 关闭按钮：18px，hover 标签才出现；仅剩一个标签时不渲染 */
 .tab .tclose {
   position: absolute;
-  right: 7px;
+  right: 3px;
   top: 50%;
   transform: translateY(-50%);
   width: 18px;

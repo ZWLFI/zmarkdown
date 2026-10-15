@@ -1,4 +1,5 @@
 import type { Lexer, MarkedExtension, Tokens } from 'marked';
+import { currentParagraph } from './currentParagraph';
 
 // marked's `tokenizer`/`renderer` hooks are bound to a context object that
 // exposes the active `lexer` (for nested block tokenisation) and `parser`
@@ -42,7 +43,7 @@ export default function footnoteExtension(): MarkedExtension {
                     // newline inside that slice — never when the slice merely
                     // begins with `[^`, because that would split paragraphs
                     // at inline footnote references like `Lorem [^1] ipsum`.
-                    const m = /\n\[\^[^^[\]\s]+(?<!\\)\]:/.exec(src);
+                    const m = /\n\[\^[^^[\]\s]+(?<!\\)\]:/.exec(currentParagraph(src));
                     return m ? m.index + 1 : undefined;
                 },
                 tokenizer(src: string): IFootnoteToken | undefined {

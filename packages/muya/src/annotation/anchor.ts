@@ -745,6 +745,11 @@ export function orderAnnotationsByDocument(
     annotations: IAnnotation[],
     muya: Muya,
 ): IAnnotation[] {
+    // 空表直接返回：序号表要遍历全文并逐块求路径，没有标注的文档（绝大多数）
+    // 每次切换/打开都白跑一遍，大文件上是秒级开销。
+    if (!annotations.length)
+        return [];
+
     const ordinals = blockOrdinalMap(muya);
 
     return annotations

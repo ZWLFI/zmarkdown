@@ -1,4 +1,5 @@
 import katex from 'katex';
+import { currentParagraph } from './currentParagraph';
 import 'katex/dist/contrib/mhchem.mjs';
 
 export interface IMathToken {
@@ -90,7 +91,7 @@ function blockKatex(renderer: (token: IMathToken) => string) {
         name: 'multiplemath',
         level: 'block' as const,
         start(src: string) {
-            return src.indexOf('\n$');
+            return currentParagraph(src).indexOf('\n$');
         },
         tokenizer(src: string) {
             const match = src.match(blockRule);

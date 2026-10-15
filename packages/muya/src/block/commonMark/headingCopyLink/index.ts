@@ -19,7 +19,11 @@ const debug = logger('headingCopyLink:');
 // stable slug — the SAME value `getTOC()` exposes as `ITocItem.slug` — so the
 // host can resolve it back to a TOC entry (`copyGithubSlug`).
 class HeadingCopyLink extends TreeNode {
-    private _eventIds: string[] = [];
+    // Listeners live on this block's own element and die with it; they are not
+    // registered in `eventCenter`, whose table is never pruned when a whole
+    // document is replaced (setContent / tab switch) and would otherwise keep
+    // every replaced heading — and its DOM — alive.
+    private _listeners: [string, EventListener][] = [];
 
     static override blockName = 'heading-copy-link';
 
@@ -63,8 +67,7 @@ class HeadingCopyLink extends TreeNode {
     }
 
     private _listen() {
-        const { domNode, muya } = this;
-        const { eventCenter } = muya;
+        const { domNode } = this;
 
         const clickHandler = (event: Event) => {
             // The handler is bound to a `click` DOM event on the affordance, so
@@ -87,10 +90,9 @@ class HeadingCopyLink extends TreeNode {
             this._activate();
         };
 
-        this._eventIds.push(
-            eventCenter.attachDOMEvent(domNode!, 'click', clickHandler),
-            eventCenter.attachDOMEvent(domNode!, 'keydown', keydownHandler),
-        );
+        this._listeners.push(['click', clickHandler], ['keydown', keydownHandler]);
+        for (const [type, listener] of this._listeners)
+            domNode!.addEventListener(type, listener);
     }
 
     // Emit `heading-copy-link` with the heading's stable slug. At activation
@@ -106,8 +108,9 @@ class HeadingCopyLink extends TreeNode {
     }
 
     private _detachDOMEvents() {
-        for (const id of this._eventIds)
-            this.muya.eventCenter.detachDOMEvent(id);
+        for (const [type, listener] of this._listeners)
+            this.domNode?.removeEventListener(type, listener);
+        this._listeners = [];
     }
 
     override remove(_source: string) {
