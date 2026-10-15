@@ -1,7 +1,7 @@
-import equal from 'deep-equal'
 import bus from '../bus'
 import { getUniqueId, deepClone } from '../util'
 import listToTree, { type ListItem, type TreeNode } from '../util/listToTree'
+import { isSameToc } from '../util/tocKeys'
 import {
   createDocumentState,
   getOptionsFromState,
@@ -15,6 +15,7 @@ import {
   QuickOpenCommand,
   TrailingNewlineCommand
 } from '../commands'
+import { toRaw } from 'vue'
 import { defineStore } from 'pinia'
 import { useAnnotationStore } from './annotation'
 import { usePreferencesStore } from './preferences'
@@ -1615,7 +1616,7 @@ export const useEditorStore = defineStore('editor', {
       if (history) tab.history = history
 
       // Only update TOC if it's the current file
-      if (id === this.currentFile?.id && toc && !equal(toc, this.listToc)) {
+      if (id === this.currentFile?.id && toc && !isSameToc(toc, toRaw(this.listToc))) {
         this.listToc = toc
         this.toc = listToTree<TocItem>(toc)
       }
@@ -1762,7 +1763,7 @@ export const useEditorStore = defineStore('editor', {
       const tab = this.tabs[index]
       if (!tab) return
       if (wordCount) tab.wordCount = wordCount
-      if (id === this.currentFile?.id && toc && !equal(toc, this.listToc)) {
+      if (id === this.currentFile?.id && toc && !isSameToc(toc, toRaw(this.listToc))) {
         this.listToc = toc
         this.toc = listToTree<TocItem>(toc)
       }
