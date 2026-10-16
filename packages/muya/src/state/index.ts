@@ -275,7 +275,12 @@ class JSONState {
     }
 
     getMarkdown() {
-        return this.getMarkdownFromState(this.getState());
+        // The serializer only reads its input (list `meta` is cloned before it
+        // rewrites the marker / start counter), so feed it the live state: the
+        // desktop calls this on every keystroke, and the defensive
+        // `structuredClone` cost more than the serialization itself (29ms of
+        // 39ms on a 2MB document).
+        return this.getMarkdownFromState(this._state);
     }
 
     getTOC() {

@@ -219,26 +219,6 @@ export const getTranslatedSearchContent: CachedTranslator = (() => {
 
 // Add language change listener
 export const setupLanguageChangeListener = (): void => {
-  // Listen for language change events
-  const handleLanguageChange = () => {
-    // Trigger search content refresh
-    if (window.__VUE_I18N__) {
-      try {
-        const g = resolveGlobal(window.__VUE_I18N__)
-        const currentLanguage = resolveLocale(g)
-
-        // Here we can dispatch a custom event to notify the search component to refresh
-        window.dispatchEvent(
-          new CustomEvent('languageChanged', {
-            detail: { language: currentLanguage }
-          })
-        )
-      } catch (e) {
-        console.warn('⚠️ Failed to get updated language setting:', e)
-      }
-    }
-  }
-
   // Listen for locale changes in the i18n instance
   if (window.__VUE_I18N__) {
     try {
@@ -251,22 +231,9 @@ export const setupLanguageChangeListener = (): void => {
     }
   }
 
-  // Add a polling fallback mechanism as a backup
-  setInterval(() => {
-    try {
-      if (window.__VUE_I18N__) {
-        const g = resolveGlobal(window.__VUE_I18N__)
-        const currentLanguage = resolveLocale(g)
-        if (currentLanguage !== getTranslatedSearchContent.lastLanguage) {
-          getTranslatedSearchContent.lastLanguage = currentLanguage
-          handleLanguageChange()
-        }
-      }
-    } catch {
-      // Ignore errors and continue checking
-    }
-  }, 1000) // Check once per second
-
+  // 不再每秒轮询语言：轮询派发的 `languageChanged` 没有任何监听方，`lastLanguage`
+  // 也不参与搜索内容的缓存（getTranslatedSearchContent 每次都现算），却让每个窗口
+  // （编辑器 / 欢迎页 / 设置）的渲染进程每秒被唤醒一次。
   // Record the initial language
   try {
     if (window.__VUE_I18N__) {

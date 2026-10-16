@@ -8,6 +8,7 @@ import footnoteExtension from './extensions/footnote';
 import mathExtension from './extensions/math';
 import superSubScriptExtension from './extensions/superSubscript';
 import fm, { frontMatterRender } from './frontMatter';
+import { visitTokens } from './lexBlock';
 import { DEFAULT_OPTIONS } from './options';
 import walkTokens from './walkTokens';
 
@@ -35,10 +36,10 @@ function highlight(code: string, lang: string) {
     return Prism.highlight(code, grammar, lang);
 }
 
-export function getHighlightHtml(src: string, options: ILexOption = {}) {
-    options = Object.assign({}, DEFAULT_OPTIONS, options);
-    const { footnote, frontMatter, math, isGitlabCompatibilityEnabled, superSubScript }
-        = options;
+// The Marked instance `getHighlightHtml` renders with: code highlighting plus
+// the muya extensions selected by `options`. Exported for the equivalence spec.
+export function createHtmlMarked(options: ILexOption) {
+    const { math, isGitlabCompatibilityEnabled, superSubScript, footnote } = options;
 
     // Build a fresh Marked instance per call. `Marked.use({ walkTokens })`
     // chains rather than replaces, so reusing a module-level singleton would
@@ -72,9 +73,42 @@ export function getHighlightHtml(src: string, options: ILexOption = {}) {
     if (footnote)
         marked.use(footnoteExtension());
 
+    return marked;
+}
+
+// Run the instance's (composed) `walkTokens` callback through the in-place
+// visitor instead of marked's own walk, which concatenates every callback
+// result into one growing array — quadratic in document size (1.4s of a 2.3s
+// HTML export of a 2MB document). Same visiting order, same position in the
+// pipeline: `processAllTokens` runs right where marked would start its walk.
+// The results marked collects only matter for async walkers (none here: code
+// highlighting is synchronous).
+function useLinearWalkTokens(marked: Marked) {
+    const walk = marked.defaults.walkTokens;
+    if (!walk)
+        return;
+
+    marked.setOptions({ walkTokens: null });
+    marked.use({
+        hooks: {
+            processAllTokens(tokens) {
+                visitTokens(tokens, token => walk.call(marked, token), marked.defaults.extensions?.childTokens);
+
+                return tokens;
+            },
+        },
+    });
+}
+
+export function getHighlightHtml(src: string, options: ILexOption = {}) {
+    options = Object.assign({}, DEFAULT_OPTIONS, options);
+
+    const marked = createHtmlMarked(options);
+    useLinearWalkTokens(marked);
+
     let html = '';
 
-    if (frontMatter) {
+    if (options.frontMatter) {
         const { token, src: newSrc } = fm(src);
         if (token) {
             html = frontMatterRender(token);

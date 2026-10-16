@@ -130,8 +130,9 @@
   transition: background-color 0.3s ease;
 }
 
-/* 滚动中：淡入半透明墨灰 2px 细线（深/浅主题随 --editorColor）。 */
-body.scroll-engaged ::-webkit-scrollbar-thumb {
+/* 滚动中：淡入半透明墨灰 2px 细线（深/浅主题随 --editorColor）。
+   data-scroll-engaged 标在正在滚动的容器自身（见 pages/app.vue），只点亮它自己的滑块。 */
+[data-scroll-engaged]::-webkit-scrollbar-thumb {
   background: color-mix(in srgb, var(--editorColor) 20%, transparent);
   background-clip: padding-box;
 }

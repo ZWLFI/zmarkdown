@@ -3,8 +3,12 @@ import type TreeNode from '../block/base/treeNode';
 import type { IHighlight } from '../inlineRenderer/types';
 import type { Muya } from '../muya';
 import type { IMatch } from './types';
-import { DEFAULT_SEARCH_OPTIONS } from '../config';
+import { CLASS_NAMES, DEFAULT_SEARCH_OPTIONS } from '../config';
 import { buildRegexValue, matchString } from '../utils/search';
+
+// Search highlight spans (`Renderer.getHighlightClassName`): the active match
+// and every other match. Annotation highlights use their own classes.
+const SEARCH_HIGHLIGHT_SELECTOR = `span.${CLASS_NAMES.MU_HIGHLIGHT}, span.${CLASS_NAMES.MU_SELECTION}`;
 
 export class Search {
     private _value: string = '';
@@ -29,36 +33,64 @@ export class Search {
         this.index = -1;
     }
 
-    private _updateMatches(isClear = false) {
+    private _highlightsByBlock(): Map<Content, IHighlight[]> {
         const { matches, index } = this;
-        let i;
-        const len = matches.length;
         const matchesMap = new Map<Content, IHighlight[]>();
 
-        for (i = 0; i < len; i++) {
+        for (let i = 0; i < matches.length; i++) {
             const { block, start, end } = matches[i];
-            const active = i === index;
-            const highlight: IHighlight = { start, end, active };
+            const highlight: IHighlight = { start, end, active: i === index };
             const highlights = matchesMap.get(block);
 
-            if (matchesMap.has(block) && Array.isArray(highlights)) {
+            if (highlights)
                 highlights.push(highlight);
-                matchesMap.set(block, highlights);
-            }
-            else {
+            else
                 matchesMap.set(block, [highlight]);
-            }
         }
 
-        for (const [block, highlights] of matchesMap.entries()) {
+        return matchesMap;
+    }
+
+    // `skipRender`: blocks the caller is about to re-render anyway, so a clear
+    // pass need not paint them twice. Blur / focus bookkeeping still runs for
+    // every block.
+    private _updateMatches(isClear = false, skipRender?: Set<Content>) {
+        for (const [block, highlights] of this._highlightsByBlock()) {
             const isActive = highlights.some(h => h.active);
 
-            block.update(undefined, isClear ? [] : highlights);
+            if (!skipRender?.has(block))
+                block.update(undefined, isClear ? [] : highlights);
 
             if (block.parent?.active && !isActive)
                 block.blurHandler();
 
             if (isActive && !isClear)
+                block.focusHandler();
+        }
+    }
+
+    // After `find()` moves the active match only two blocks change highlights:
+    // the one holding the previous active match and the one holding the new
+    // one. Re-rendering every matched block (twice — a clear pass, then a
+    // highlight pass) cost ~3s per Enter on a 5MB document with ~9.5k matches.
+    // A matched block whose highlights an edit has since wiped is re-rendered
+    // as well, so it comes back highlighted exactly as before. Blur / focus
+    // calls are the same as a full `_updateMatches()` pass.
+    private _moveActiveMatch(prevIndex: number) {
+        const changed = new Set<Content>([this.matches[this.index].block]);
+        if (this.matches[prevIndex])
+            changed.add(this.matches[prevIndex].block);
+
+        for (const [block, highlights] of this._highlightsByBlock()) {
+            const isActive = highlights.some(h => h.active);
+
+            if (changed.has(block) || !block.domNode?.querySelector(SEARCH_HIGHLIGHT_SELECTOR))
+                block.update(undefined, highlights);
+
+            if (block.parent?.active && !isActive)
+                block.blurHandler();
+
+            if (isActive)
                 block.focusHandler();
         }
     }
@@ -146,10 +178,10 @@ export class Search {
         if (index >= len)
             index = 0;
 
+        const prevIndex = this.index;
         this.index = index;
 
-        this._updateMatches(true);
-        this._updateMatches();
+        this._moveActiveMatch(prevIndex);
 
         return this;
     }
@@ -169,9 +201,6 @@ export class Search {
         // `selectHighlight` request can drop the cursor back onto it when the
         // new search has no match of its own (e.g. closing the search bar).
         const prevActiveMatch = this.matches[this.index];
-
-        // Empty last search.
-        this._updateMatches(true);
 
         // Highlight current search.
         if (value) {
@@ -204,6 +233,10 @@ export class Search {
             // highlight the first word that matches.
             index = 0;
         }
+
+        // Empty last search. Blocks that match again are repainted by the
+        // highlight pass right below, so the clear pass skips painting them.
+        this._updateMatches(true, new Set(matches.map(m => m.block)));
 
         Object.assign(this, { _value: value, matches, index });
 
