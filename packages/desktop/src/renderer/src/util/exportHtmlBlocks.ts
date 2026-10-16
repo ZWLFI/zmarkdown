@@ -1,4 +1,4 @@
-import type { Muya } from '@muyajs/core'
+import type { IHtmlFrameTarget, Muya } from '@muyajs/core'
 import { collectHtmlFrameTargets, findHtmlBlockSpans } from '@muyajs/core'
 import log from 'electron-log'
 import { buildLiveFrame, buildLivePlaceholder, LIVE_FRAME_CLASS_PREFIX } from './exportLiveFrame'
@@ -37,6 +37,50 @@ const buildImageBlock = (width: number, dataUrl: string): string =>
   '</div>'
 
 /**
+ * 同时在截的块数上限。每块截图大半时间花在主进程等内容稳定、等出帧的固定时长上
+ * （实测约 440ms/块），逐块串行时 12 块的 PRD 光截图就要 5.3s；每块各占一个离屏
+ * 渲染进程，所以只放开到 3 个，不无限并发。
+ */
+export const RASTERIZE_CONCURRENCY = 3
+
+/**
+ * 逐块截图，结果按文档顺序返回；任何一块失败就返回 null（调用方整篇按原样导出），
+ * 失败后不再发起新的截图。
+ */
+const rasterizeAll = async (
+  targets: IHtmlFrameTarget[],
+  shellUrl: string
+): Promise<string[] | null> => {
+  const dataUrls: string[] = new Array(targets.length)
+  let next = 0
+  let failed = false
+
+  const worker = async (): Promise<void> => {
+    while (!failed && next < targets.length) {
+      const index = next++
+      const target = targets[index]
+      const result = await window.electron.ipcRenderer.invoke('mt::export::rasterize-html-frame', {
+        shellUrl,
+        html: target.html,
+        width: target.width,
+        height: target.height,
+        zoom: target.zoom
+      })
+      if (!result?.dataUrl) {
+        failed = true
+        return
+      }
+      dataUrls[index] = result.dataUrl
+    }
+  }
+
+  await Promise.all(
+    Array.from({ length: Math.min(RASTERIZE_CONCURRENCY, targets.length) }, () => worker())
+  )
+  return failed ? null : dataUrls
+}
+
+/**
  * 返回可直接交给导出渲染的 markdown，以及 live 形态要注入的 iframe 片段。
  * 任何一步对不上（帧与源码数量不符、截图失败）都宁可原样导出，绝不猜。
  */
@@ -69,24 +113,16 @@ export const inlineFramedHtmlBlocks = async (
     })
   } else {
     const shellUrl = new URL('html-frame.html', document.baseURI).href
-
-    for (const target of targets) {
-      const result = await window.electron.ipcRenderer.invoke('mt::export::rasterize-html-frame', {
-        shellUrl,
-        html: target.html,
-        width: target.width,
-        height: target.height,
-        zoom: target.zoom
-      })
-
-      if (!result?.dataUrl) {
-        log.warn('[export] 内嵌 HTML 块截图失败，本块按原样导出')
-        return unchanged
-      }
-
-      // 用编辑器里的显示尺寸展示：导出物看到的和屏幕上一样大。
-      replacements.push(buildImageBlock(target.width, result.dataUrl))
+    const dataUrls = await rasterizeAll(targets, shellUrl)
+    if (!dataUrls) {
+      log.warn('[export] 内嵌 HTML 块截图失败，本块按原样导出')
+      return unchanged
     }
+
+    // 用编辑器里的显示尺寸展示：导出物看到的和屏幕上一样大。
+    targets.forEach((target, index) => {
+      replacements.push(buildImageBlock(target.width, dataUrls[index]))
+    })
   }
 
   const lines = markdown.split('\n')
