@@ -151,8 +151,7 @@ onMounted(() => {
       id: tab.id,
       markdown,
       wordCount: muyaWordCount(markdown),
-      toc: muya.getTOC(),
-      blocks: muya.getState()
+      toc: muya.getTOC()
     })
   })
 
