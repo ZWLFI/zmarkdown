@@ -93,8 +93,9 @@ const scrollEngageTimers = new WeakMap<Element, ReturnType<typeof setTimeout>>()
 const engageScrollbars = (event: Event) => {
   const scroller = event.target instanceof Element ? event.target : document.scrollingElement
   if (!scroller) return
-  if (!scroller.hasAttribute('data-scroll-engaged'))
+  if (!scroller.hasAttribute('data-scroll-engaged')) {
     scroller.setAttribute('data-scroll-engaged', '')
+  }
   clearTimeout(scrollEngageTimers.get(scroller))
   scrollEngageTimers.set(
     scroller,
