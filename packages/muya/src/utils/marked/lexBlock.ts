@@ -15,7 +15,7 @@ type TChildTokens = Record<string, string[]> | undefined;
 // every callback result into one array as it goes — copying the accumulated
 // array once per token — which is quadratic in document size; we only need the
 // side effects, so visit in place.
-function visitTokens(tokens: Token[], visit: (token: Token) => void, childTokens: TChildTokens) {
+export function visitTokens(tokens: Token[], visit: (token: Token) => void, childTokens: TChildTokens) {
     for (const token of tokens) {
         visit(token);
         switch (token.type) {
