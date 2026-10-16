@@ -4,6 +4,7 @@ import { defineConfig } from 'electron-vite'
 import vue from '@vitejs/plugin-vue'
 import svgLoader from 'vite-svg-loader'
 import postcssPresetEnv from 'postcss-preset-env'
+import { elementPlusClassAttrRewrite } from './postcss-element-plus-class-attr'
 import packageJson from './package.json' with { type: 'json' }
 import { fileURLToPath } from 'url'
 
@@ -115,6 +116,7 @@ export default defineConfig({
     css: {
       postcss: {
         plugins: [
+          elementPlusClassAttrRewrite(),
           postcssPresetEnv({
             stage: 0,
             features: {
