@@ -508,6 +508,9 @@ const pruneClosedTabState = (liveTabIds: Set<string>): void => {
   for (const id of lastEngineMarkdownByTab.keys()) {
     if (!liveTabIds.has(id)) lastEngineMarkdownByTab.delete(id)
   }
+  for (const id of scrollAnchorByTab.keys()) {
+    if (!liveTabIds.has(id)) scrollAnchorByTab.delete(id)
+  }
 }
 
 // P2（按键路径）：字数统计与 TOC 只喂状态栏/大纲面板，不值得压在每次按键的同步
@@ -543,6 +546,168 @@ const scheduleDerivedStats = (id: string): void => {
   } else {
     const handle = window.setTimeout(run, 150)
     derivedStatsIdle = { cancel: () => window.clearTimeout(handle) }
+  }
+}
+
+// 大文档：屏外顶层块跳过样式/布局/绘制（样式见 assets/styles/index.css 的 .cv-offscreen）。
+// 滚动时的长任务几乎全部来自「整篇文档的样式重算与布局」，屏外块跳过之后实测 2MB 文档
+// 滚动长任务 17.2s → 0、帧 p50 50ms → 16.5ms（2026-10-15 性能审计 A 项）。
+//
+// 两个约束决定了实现方式：
+//   1) 只在**文档完成首次完整布局之后**才挂（这里推到空闲帧）——那时每个块都已按真实
+//      内容布局过一次，`contain-intrinsic-size: auto` 复用那份「记忆尺寸」，滚动高度与
+//      各块位置保持精确；滚动位置恢复、大纲跳转、查找定位、标注卡片定位都走像素计算，
+//      靠的正是这份精确性。
+//   2) 阈值以下的文档不开：没有收益，而屏外块被跳过会让小文档的滚动条先粗后细。
+const CV_OFFSCREEN_MIN_BLOCKS = 1500
+let cvOffscreenIdle: { cancel: () => void } | null = null
+
+const applyOffscreenSkipping = (): void => {
+  const el = wrapperRef.value
+  if (!el) return
+  // 直接数顶层块：比读 store 里的 markdown 长度稳（首个文档由引擎构造参数装载，
+  // 那一刻 store 的字段未必就位），而且这正是要门控的对象。
+  const container = el.querySelector<HTMLElement>('.mu-container')
+  const blocks = container ? container.children.length : 0
+  if (!container || blocks < CV_OFFSCREEN_MIN_BLOCKS) {
+    el.classList.remove('cv-offscreen')
+    return
+  }
+  // 回退值取「本文档实测平均块高」：屏外块被跳过后用不到真实尺寸，回退值越接近
+  // 真实平均，滚动高度就越接近真实值（滚动位置恢复 / 大纲 / 查找都按像素算）。
+  // 注意：`contain-intrinsic-size: auto` 并不会复用挂上之前那次布局的尺寸（实测
+  // 挂上后 scrollHeight 直接掉到 回退值×块数），所以这个值必须自己算准。
+  const avg = Math.max(1, Math.round(container.scrollHeight / blocks))
+  el.style.setProperty('--mu-cv-est', `${avg}px`)
+  el.classList.add('cv-offscreen')
+  const pending = pendingAnchorReapply
+  pendingAnchorReapply = null
+  const scroller = getScrollContainer()
+  if (pending && scroller && currentFile.value?.id === pending.tabId) {
+    restoreScrollAnchor(scroller, pending.anchor)
+  }
+}
+
+// 揭示类操作（恢复滚动位置 / 大纲跳转 / 查找定位 / 光标进入视野）都按像素计算落点，
+// 而屏外块被跳过时几何是估算的 → 这些操作前先摘掉 `cv-offscreen`（布局立刻回到精确
+// 状态），操作落定后再挂回（滚动依旧顺滑）。摘/挂各只影响一次布局，且都发生在用户
+// 主动跳转的离散时刻，不在连续滚动/打字的路径上。
+let cvResumeTimer: ReturnType<typeof setTimeout> | null = null
+
+// ── 内容锚点：滚动位置的「身份」──────────────────────────────────────────
+// 屏外块被跳过后几何是估算值（见 .cv-offscreen），于是「按像素保存的 scrollTop」
+// 在保存时的混合布局与恢复时的精确布局之间不可比——同一个像素可能指向不同内容
+// （2026-10-15 实测：换标签回来时两次运行一次对得上、一次对不上）。
+// 改为保存「顶部可见块的序号 + 视口相对偏移」，恢复时在精确布局里按该块反算。
+// 注意不能存「块的内容偏移」——它同样被混合布局污染；只有视口相对量是干净的。
+// cv 关闭时锚点与像素等价（精确布局下反算出的 scrollTop 就是原值），故小文档行为不变。
+interface IScrollAnchor {
+  index: number
+  // 块顶应出现在「容器顶下方多少像素」——可为负（块顶被滚到容器顶之上）。
+  topRel: number
+}
+
+const scrollAnchorByTab = new Map<string, IScrollAnchor>()
+// 恢复/揭示落位后记下锚点：cv 挂回会把布局从「精确」换回「混合」，同一像素又指向别处，
+// 所以挂回之后要按同一个锚点再落位一次（锚点是内容身份，两种布局下都成立）。
+let pendingAnchorReapply: { tabId: string; anchor: IScrollAnchor } | null = null
+
+/** 顶层块下标（块元素是 .mu-container 的直接子元素）。 */
+const topLevelIndexOf = (host: HTMLElement, el: Element): number => {
+  let node: Element | null = el
+  while (node && node.parentElement !== host) node = node.parentElement
+  return node ? [...host.children].indexOf(node) : -1
+}
+
+/** 记下「顶部可见块」：二分找第一个底边越过容器顶的顶层块（rect.bottom 随下标单调）。 */
+const captureScrollAnchor = (container: HTMLElement, tabId: string): void => {
+  if (container.scrollTop <= 0) {
+    scrollAnchorByTab.delete(tabId)
+    return
+  }
+  const host = container.querySelector<HTMLElement>('.mu-container')
+  const kids = host?.children
+  if (!host || !kids || !kids.length) return
+  const cTop = container.getBoundingClientRect().top
+  let lo = 0
+  let hi = kids.length - 1
+  let found = -1
+  while (lo <= hi) {
+    const mid = (lo + hi) >> 1
+    if (kids[mid].getBoundingClientRect().bottom > cTop) {
+      found = mid
+      hi = mid - 1
+    } else {
+      lo = mid + 1
+    }
+  }
+  if (found < 0) return
+  const topRel = kids[found].getBoundingClientRect().top - cTop
+  // 块顶高于容器顶超过自身高度 → 说明它整块在视口上方，锚点没意义（交给像素路径）。
+  if (topRel < -kids[found].getBoundingClientRect().height) return
+  scrollAnchorByTab.set(tabId, { index: found, topRel })
+}
+
+/** 在**当前布局**下按锚点落位；返回 false 表示锚点已失效（块不存在/文档变短）。 */
+const restoreScrollAnchor = (container: HTMLElement, anchor: IScrollAnchor): boolean => {
+  const host = container.querySelector<HTMLElement>('.mu-container')
+  const block = host?.children[anchor.index] as HTMLElement | undefined
+  if (!block) return false
+  const cRect = container.getBoundingClientRect()
+  const blockTopInContent = container.scrollTop + (block.getBoundingClientRect().top - cRect.top)
+  container.scrollTop = Math.max(0, blockTopInContent - anchor.topRel)
+  return true
+}
+
+/** 异步版精确窗口：整个 Promise 期间保持精确布局（导出采集帧尺寸要用）。 */
+async function withExactLayoutAsync<T>(run: () => Promise<T>): Promise<T> {
+  const el = wrapperRef.value
+  if (!el || !el.classList.contains('cv-offscreen')) return run()
+  el.classList.remove('cv-offscreen')
+  try {
+    return await run()
+  } finally {
+    if (cvResumeTimer) clearTimeout(cvResumeTimer)
+    cvResumeTimer = setTimeout(() => {
+      cvResumeTimer = null
+      scheduleOffscreenSkipping()
+    }, 200)
+  }
+}
+const withExactLayout = (run: () => void, settleMs = 400): void => {
+  const el = wrapperRef.value
+  if (!el) {
+    run()
+    return
+  }
+  const wasOn = el.classList.contains('cv-offscreen')
+  el.classList.remove('cv-offscreen')
+  run()
+  if (!wasOn) return
+  // 多次跳转时只保留最后一个截止时间：动画没落定前不要挂回（否则落点会按估算值算）。
+  if (cvResumeTimer) clearTimeout(cvResumeTimer)
+  cvResumeTimer = setTimeout(() => {
+    cvResumeTimer = null
+    scheduleOffscreenSkipping()
+  }, settleMs)
+}
+
+const scheduleOffscreenSkipping = (): void => {
+  cvOffscreenIdle?.cancel()
+  const idleHost = window as unknown as {
+    requestIdleCallback?: (cb: () => void, opts: { timeout: number }) => number
+    cancelIdleCallback?: (handle: number) => void
+  }
+  const run = (): void => {
+    cvOffscreenIdle = null
+    applyOffscreenSkipping()
+  }
+  if (typeof idleHost.requestIdleCallback === 'function') {
+    const handle = idleHost.requestIdleCallback(run, { timeout: 500 })
+    cvOffscreenIdle = { cancel: () => idleHost.cancelIdleCallback?.(handle) }
+  } else {
+    const handle = window.setTimeout(run, 150)
+    cvOffscreenIdle = { cancel: () => window.clearTimeout(handle) }
   }
 }
 
@@ -1521,16 +1686,24 @@ const getCursorY = (): number | null => {
 }
 
 const scrollToCursor = (duration = 300) => {
-  nextTick(() => {
-    const container = getScrollContainer()
-    if (!container) return
-    const y = getCursorY()
-    if (y == null) return
-    animatedScrollTo(container, container.scrollTop + y - STANDAR_Y, duration)
-  })
+  withExactLayout(
+    () =>
+      nextTick(() => {
+        const container = getScrollContainer()
+        if (!container) return
+        const y = getCursorY()
+        if (y == null) return
+        animatedScrollTo(container, container.scrollTop + y - STANDAR_Y, duration)
+      }),
+    duration + 100
+  )
 }
 
 const scrollToCords = (y: number) => {
+  withExactLayout(() => scrollToCordsInner(y))
+}
+
+const scrollToCordsInner = (y: number) => {
   const container = getScrollContainer()
   if (!container) return
   // Depending on how much the user previously scrolled, sometimes the container has not fully rendered all elements.
@@ -1559,10 +1732,22 @@ const scrollToCords = (y: number) => {
 // Shared by the TOC, search-highlight, and any other "reveal this element"
 // caller so the getBoundingClientRect + animatedScrollTo math lives once.
 const scrollElementIntoView = (anchor: Element | null | undefined, duration = 300) => {
-  const container = getScrollContainer()
-  if (!container || !anchor) return
-  const { y } = anchor.getBoundingClientRect()
-  animatedScrollTo(container, container.scrollTop + y - STANDAR_Y, duration)
+  withExactLayout(() => {
+    const container = getScrollContainer()
+    if (!container || !anchor) return
+    const { y } = anchor.getBoundingClientRect()
+    animatedScrollTo(container, container.scrollTop + y - STANDAR_Y, duration)
+  }, duration + 400)
+  // 动画落定后按「目标块 + STANDAR_Y 落点」记锚点：cv 挂回会把布局换回混合态、
+  // 目标又会漂走，挂回时用这个锚点复位（实测不记的话 2MB 文档偏 5.8 万像素）。
+  window.setTimeout(() => {
+    const container = getScrollContainer()
+    const tabId = currentFile.value?.id
+    const host = container?.querySelector<HTMLElement>('.mu-container')
+    if (!container || !host || !tabId || !anchor) return
+    const index = topLevelIndexOf(host, anchor)
+    if (index >= 0) pendingAnchorReapply = { tabId, anchor: { index, topRel: STANDAR_Y } }
+  }, duration + 150)
 }
 
 const scrollToHighlight = () => {
@@ -1632,10 +1817,11 @@ const handleExport = async (options: unknown) => {
   // 否则那块要么空白，要么只剩一段被转义的源码文本：
   //   · HTML 导出 → live：保留成自包含的沙箱 iframe，单文件带走也能点、能交互；
   //   · PDF / 打印 / docx → image：按当前显示尺寸定格成一张图。
-  const { markdown: exportMarkdown, frames: exportFrames } = await inlineFramedHtmlBlocks(
-    editor.value,
-    markdown,
-    { live: type === 'styledHtml' }
+  // 采集内嵌帧尺寸要读活编辑器的 shell 矩形；屏外块被跳过时量到的是估算值/0，
+  // 会让宽度不足的帧被丢弃 → targets 与 spans 数量不符 → 整篇退化成「原样导出」
+  // （PRD 的内嵌原型在 PDF/HTML 里就丢了）。这段期间保持精确布局。
+  const { markdown: exportMarkdown, frames: exportFrames } = await withExactLayoutAsync(() =>
+    inlineFramedHtmlBlocks(editor.value, markdown, { live: type === 'styledHtml' })
   )
   const header = (opts.header ?? null) as HeaderFooterPart | null
   const footer = (opts.footer ?? null) as HeaderFooterPart | null
@@ -1889,6 +2075,8 @@ const setMarkdownToEditor = (payload: unknown) => {
     editorStore.UPDATE_TOC(editor.value.getTOC())
     // A freshly created/opened tab should be ready to type into.
     focusFreshEditor()
+    // 装载完成、布局已发生 → 空闲帧里按文档大小决定是否跳过屏外块（见该函数注释）。
+    scheduleOffscreenSkipping()
   }
 }
 
@@ -2031,12 +2219,30 @@ const handleFileChange = (payload: unknown) => {
   if (typeof scrollTop === 'number') {
     container.style.visibility = 'hidden'
     container.style.pointerEvents = 'none'
-    scrollToCords(scrollTop)
+    const anchor = id ? scrollAnchorByTab.get(id) : undefined
+    if (anchor) {
+      // 屏外块被跳过时像素不可比 → 在精确布局里按「顶部可见块 + 视口偏移」落位。
+      pendingAnchorReapply = { tabId: id!, anchor }
+      withExactLayout(() => {
+        if (!restoreScrollAnchor(container, anchor)) {
+          scrollToCordsInner(scrollTop)
+        }
+      })
+      requestAnimationFrame(() => {
+        container.style.visibility = 'visible'
+        container.style.pointerEvents = 'auto'
+      })
+    } else {
+      scrollToCords(scrollTop)
+    }
   } else {
     container.style.visibility = 'visible'
     container.style.pointerEvents = 'auto'
     scrollToCursor(0)
   }
+
+  // 换标签：新文档已布局 → 空闲帧里重新判定（大文档开启、小文档关闭）。
+  scheduleOffscreenSkipping()
 }
 
 const handleInsertParagraph = (location: unknown) => {
@@ -2229,6 +2435,8 @@ onMounted(() => {
   // The first document's content is set via constructor options, so no
   // `file-loaded` / `setMarkdownToEditor` runs for it — seed its TOC here.
   editorStore.UPDATE_TOC(muya.getTOC())
+  // 首个文档由构造参数装载（不走 file-loaded / file-changed）→ 这里补一次屏外跳过判定。
+  scheduleOffscreenSkipping()
   // 外部改动判定（store 侧）需要引擎同款规范化：磁盘原文与编辑区缓冲可能只差
   // 引擎的格式归一（表格填充等），两边都过一遍引擎管线再比才判得准。
   editorStore.SET_MARKDOWN_CANONICALIZER((md: string) => muya.canonicalizeMarkdown(md))
@@ -2373,6 +2581,7 @@ onMounted(() => {
       scrollRafHandle = null
       if (currentFile.value) {
         editorStore.updateScrollPosition(currentFile.value.id, container.scrollTop)
+        captureScrollAnchor(container, currentFile.value.id)
       }
     })
   }

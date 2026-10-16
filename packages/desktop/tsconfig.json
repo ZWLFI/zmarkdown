@@ -17,6 +17,7 @@
     "src/renderer/**/*.ts",
     "test/**/*.ts",
     "electron.vite.config.ts",
+    "postcss-element-plus-class-attr.ts",
     "vitest.config.ts"
   ],
   "exclude": [

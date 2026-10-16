@@ -137,10 +137,23 @@
   background-clip: padding-box;
 }
 
+/* 大文档：屏外顶层块跳过样式/布局/绘制。滚动时的长任务几乎全部来自「整篇文档的
+   样式重算与布局」，屏外块跳过之后实测 2MB 文档滚动长任务 17.2s → 0、帧 p50
+   50ms → 16.5ms（见 2026-10-15 性能审计 A 项）。
+
+   `cv-offscreen` 由 editor.vue 在**文档完成首次完整布局之后**才挂上（空闲帧）：
+   此时每个块都已按真实内容布局过一次，`contain-intrinsic-size: auto` 会复用那份
+   「记忆尺寸」，滚动高度与各块位置保持精确——滚动位置恢复、大纲跳转、查找定位、
+   标注卡片定位都走像素计算，靠的正是这份精确性。回退值 60px 只对「从未布局过」
+   的块生效（正常流程里不出现）。 */
+.editor-wrapper.cv-offscreen .mu-container > * {
+  content-visibility: auto;
+  contain-intrinsic-size: auto var(--mu-cv-est, 60px);
+}
+
 /* 指针移到滑块上：直接显现并加深（不依赖滚动状态）。 */
 ::-webkit-scrollbar-thumb:hover {
-  background: color-mix(in srgb, var(--editorColor) 34%, transparent);
-  background-clip: padding-box;
+  background: color-mix(in srgb, var(--editorColor) 34%, transparent);  background-clip: padding-box;
 }
 
 ::-webkit-scrollbar-thumb:active {

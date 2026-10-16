@@ -115,11 +115,6 @@ interface ContentChangePayload {
   // （见 `IS_ENGINE_OWN_WRITE`）。源码模式 / 右栏 docMode / 磁盘重载一律不传，
   // 它们的写入必须让 watch 照常走 setContent 同步。
   fromEngine?: boolean
-  // P2：内容变更不再携带块树（`getState()` 是整篇深拷贝，每键一次纯浪费——
-  // store 从不读它）。字段保留只为右栏 `docEditorPane.vue` 的调用点仍能通过
-  // 类型检查：那里也还在传 `blocks: muya.getState()`，同属本条 P2（该文件不在本
-  // 批改动范围内，见报告「遗留」）。store 侧已不再写入 `tab.blocks`。
-  blocks?: unknown
 }
 
 interface AffiliationEntry {
