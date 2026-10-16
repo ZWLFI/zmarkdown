@@ -166,6 +166,40 @@ export function buildFrameSourceMessage(html: string): IFrameSourceMessage {
     return { type: 'momark-html-frame-source', html };
 }
 
+// 帧外壳 → 它的「布局变了」回调。只挂在外壳元素上（WeakMap），随块一起回收。
+const frameLayoutCallbacks = new WeakMap<Element, () => void>();
+const observedHosts = new WeakSet<Element>();
+let hostObserver: ResizeObserver | null = null;
+
+// 正文栏（帧宿主）尺寸变化的共享观察。宿主活得比块长：切标签 / 撤销重做 / 外部重载
+// 只换掉宿主里的块，宿主（ScrollPage 的容器）一直在。若每个块各建观察器去 observe
+// 宿主，宿主就经观察器强引用住块的闭包，进而拽住整棵已丢弃的旧文档 DOM —— 实测
+// 12 个脚本块的文档每切一次标签多留约 2 万个节点、690 个监听器，GC 也收不回。
+// 这里宿主只登记在一个共享观察器上；宿主变化时按当前 DOM 找出仍挂在宿主里的外壳，
+// 调各自的回调，已丢弃的块不再被任何长寿对象引用。
+function observeFrameHost(host: Element, shell: Element, onChange: () => void) {
+    frameLayoutCallbacks.set(shell, onChange);
+
+    if (observedHosts.has(host)) {
+        // 宿主早已在观察中，不会再有「开始观察」的首次通知：补一次，与单独观察时一致。
+        requestAnimationFrame(() => {
+            if (shell.isConnected)
+                onChange();
+        });
+
+        return;
+    }
+
+    observedHosts.add(host);
+    hostObserver ??= new ResizeObserver((entries) => {
+        for (const entry of entries) {
+            for (const frameShell of entry.target.querySelectorAll(`.${CLASS_NAMES.MU_HTML_FRAME}`))
+                frameLayoutCallbacks.get(frameShell)?.();
+        }
+    });
+    hostObserver.observe(host);
+}
+
 // Wrap the restored iframe in a shell that adds two viewport controls:
 // a hover zoom toolbar (− / +, percentage click resets to 100%) and a
 // bottom-right drag handle that resizes the frame (the embedded page gets a
@@ -391,7 +425,7 @@ function createFrameShell(frame: HTMLIFrameElement, context: IFrameShellContext)
     // resize, sidebar toggle) exactly like a plain `width:100%` iframe.
     // 用户接管尺寸后同样要跟随布局：显示宽度要按新的可用宽度重新夹取
     // （变窄自动收、变宽回到用户尺寸），否则窗口/侧栏一变，块就把文档撑出横向滚动。
-    const observeLayout = new ResizeObserver(() => {
+    const onLayoutChange = () => {
         if (userTouched) {
             if (baseW && frameLoaded)
                 apply();
@@ -399,12 +433,14 @@ function createFrameShell(frame: HTMLIFrameElement, context: IFrameShellContext)
         else if (baseW && baseW !== frame.offsetWidth) {
             readBase();
         }
-    });
+    };
+    const observeLayout = new ResizeObserver(onLayoutChange);
     observeLayout.observe(frame);
 
     // 正文栏（frame 的宿主）也要观察：用户接管后的 frame 带内联宽度，宿主变窄时
     // 只看 frame 自己的盒子观察不到布局变化。宿主要等预览节点挂进 figure 之后才拿得到，
-    // 所以延迟到第一次 readBase 时登记。
+    // 所以延迟到第一次 readBase 时登记。走共享的宿主观察（见 observeFrameHost）：
+    // 宿主比块活得久，块自己的观察器若去 observe 宿主，就会被宿主一直拽住。
     let hostObserved = false;
     observeHost = () => {
         if (hostObserved)
@@ -415,7 +451,7 @@ function createFrameShell(frame: HTMLIFrameElement, context: IFrameShellContext)
         if (!host)
             return;
 
-        observeLayout.observe(host);
+        observeFrameHost(host, shell, onLayoutChange);
         hostObserved = true;
     };
 
