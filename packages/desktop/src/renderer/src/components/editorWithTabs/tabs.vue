@@ -2,12 +2,14 @@
   <div
     ref="tabsRoot"
     class="editor-tabs"
-    :class="{ single: scene === 'single' }"
+    :class="{ single: scene === 'single', 'native-fullscreen': nativeFullscreen }"
   >
     <button
       class="tb-toggle"
       :class="{ on: showSideBar }"
       :title="t('sideBar.toggleTitle') + ' ⌘\\'"
+      :aria-label="t('sideBar.toggleTitle')"
+      :aria-pressed="showSideBar"
       @click.stop="toggleSidebar"
     >
       <mo-icon name="i-sidebar" />
@@ -127,6 +129,12 @@ import BpModes from '@/components/browserPanel/bpModes.vue'
 // 正文整屏滑出/滑入动效的全局样式（类名挂在兄弟组件的根节点上，
 // scoped 样式无法命中，必须全局注入）。
 import './transitions.css'
+
+const nativeFullscreen = ref(false)
+const offEnterFullscreen = window.electron.ipcRenderer.on('mt::window-enter-full-screen', () => { nativeFullscreen.value = true })
+const offLeaveFullscreen = window.electron.ipcRenderer.on('mt::window-leave-full-screen', () => { nativeFullscreen.value = false })
+onMounted(async () => { nativeFullscreen.value = await window.electron.windowControl.isFullScreen() })
+onBeforeUnmount(() => { offEnterFullscreen(); offLeaveFullscreen() })
 
 const editorStore = useEditorStore()
 const layoutStore = useLayoutStore()
@@ -955,6 +963,7 @@ onBeforeUnmount(() => {
   padding-left: 88px;
   -webkit-app-region: drag;
 }
+.compact-mac .editor-tabs.native-fullscreen { padding-left: 8px; }
 .compact-mac .editor-tabs :is(button, select, .tabstrip, .bp-modes) {
   -webkit-app-region: no-drag;
 }

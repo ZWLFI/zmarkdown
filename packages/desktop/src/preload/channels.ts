@@ -60,6 +60,7 @@ export const INVOKE_CHANNELS = [
   'mt::fs::path-exists',
   'mt::fs::read-file',
   'mt::fs::readdir',
+  'mt::fs::read-directory',
   'mt::fs::stat',
   'mt::fs::unlink',
   'mt::fs::write-file',

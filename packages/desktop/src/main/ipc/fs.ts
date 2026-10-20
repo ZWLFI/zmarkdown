@@ -77,13 +77,13 @@ export const registerFsHandlers = (): void => {
     refuseIfDenied('mt::fs::move', src, dest)
     return fs.move(src, dest, { overwrite: false })
   })
-  trustedHandle('mt::fs::stat', async (_e, p: string) => serializeStat(await fs.stat(p)))
+  trustedHandle('mt::fs::stat', async(_e, p: string) => serializeStat(await fs.stat(p)))
 
   trustedHandle('mt::fs::write-file', (_e, p: string, data: unknown) => {
     refuseIfDenied('mt::fs::write-file', p)
     return fs.writeFile(p, toBuffer(data) as string | NodeJS.ArrayBufferView)
   })
-  trustedHandle('mt::fs::read-file', async (_e, p: string, encoding?: BufferEncoding) => {
+  trustedHandle('mt::fs::read-file', async(_e, p: string, encoding?: BufferEncoding) => {
     const buf = await fs.readFile(p, encoding)
     return buf
   })
@@ -92,6 +92,12 @@ export const registerFsHandlers = (): void => {
     refuseIfDenied('mt::fs::unlink', p)
     return fs.unlink(p)
   })
+  trustedHandle('mt::fs::read-directory', async(_e, p: string) =>
+    (await fs.readdir(p, { withFileTypes: true })).map(entry => ({
+      name: entry.name,
+      kind: entry.isSymbolicLink() ? 'link' as const : entry.isDirectory() ? 'directory' as const : 'file' as const
+    }))
+  )
   trustedHandle('mt::fs::readdir', (_e, p: string) => fs.readdir(p))
   trustedHandle('mt::fs::is-executable', (_e, p: string) => {
     try {

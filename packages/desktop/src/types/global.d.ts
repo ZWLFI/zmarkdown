@@ -123,6 +123,7 @@ declare global {
     readFile(p: string, encoding?: string): Promise<string | Uint8Array>
     pathExists(p: string): Promise<boolean>
     unlink(p: string): Promise<void>
+    readDirectory(p: string): Promise<Array<{ name: string; kind: 'file' | 'directory' | 'link' }>>
     readdir(p: string): Promise<string[]>
     isExecutable(p: string): Promise<boolean>
     isChildOfDirectory(dir: string, child: string): boolean

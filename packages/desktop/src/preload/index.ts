@@ -227,6 +227,7 @@ const fileUtilsAPI = {
   readFile: (p: string, encoding?: string) => invoke('mt::fs::read-file', p, encoding),
   pathExists: (p: string) => invoke('mt::fs::path-exists', p),
   unlink: (p: string) => invoke('mt::fs::unlink', p),
+  readDirectory: (p: string) => invoke('mt::fs::read-directory', p),
   readdir: (p: string) => invoke('mt::fs::readdir', p),
   isExecutable: (p: string) => invoke('mt::fs::is-executable', p),
   // Pure-string predicates — synchronous, no IPC for the common case.
