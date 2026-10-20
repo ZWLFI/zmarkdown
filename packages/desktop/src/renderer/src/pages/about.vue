@@ -4,55 +4,40 @@
 
     <div class="about-body">
       <!-- 冻结 icon-1：92px、圆角 21px -->
-      <img class="app-icon" :src="MoMarkLogo" alt="墨记" />
-      <h2>墨记</h2>
-      <div class="ver">{{ t('about.version') }} {{ version }}</div>
-
-      <!-- 检查更新（feat/updater）：查到新版后一键下载 + 提权替换 + 重启 -->
-      <div class="update-row">
-        <template v-if="state === 'idle'">
-          <a href="#" @click.prevent="checkForUpdate">{{ t('about.checkUpdate') }}</a>
-        </template>
-        <template v-else-if="state === 'checking'">
-          {{ t('about.checking') }}
-        </template>
-        <template v-else-if="state === 'latest'">
-          {{ t('about.upToDate') }}
-          <a href="#" @click.prevent="checkForUpdate">{{ t('about.recheck') }}</a>
-        </template>
-        <template v-else-if="state === 'available'">
-          {{ t('about.updateAvailable', { version: info?.version ?? '' }) }}
-          <button class="up-btn" type="button" @click="startInstall">
-            {{ t('about.downloadAndInstall') }}
-          </button>
-        </template>
-        <template v-else-if="state === 'downloading'">
-          {{ t('about.downloading', { percent: percent }) }}
-        </template>
-        <template v-else-if="state === 'extracting'">
-          {{ t('about.preparing') }}
-        </template>
-        <template v-else-if="state === 'installing'">
-          {{ t('about.installing') }}
-        </template>
-        <template v-else-if="state === 'error'">
-          {{ failureText || t('about.updateFailed') }}
-          <a href="#" @click.prevent="openRelease">{{ t('about.manualDownload') }}</a>
-        </template>
+      <img
+        class="app-icon"
+        :src="MoMarkLogo"
+        alt="zmarkdown"
+      >
+      <h2>zmarkdown</h2>
+      <div class="ver">
+        {{ t('about.version') }} {{ version }}
       </div>
 
+      <div class="update-row">
+        <a
+          href="#"
+          @click.prevent="openRelease"
+        >{{ t('about.manualDownload') }}</a>
+      </div>
+      <p>ZWLFI · derivative maintainer</p>
       <div class="line" />
 
       <div class="links">
-        <a href="#" @click.prevent="openExternal('https://momark.app')">官网 momark.app</a>
+        <a
+          href="#"
+          @click.prevent="openExternal('https://github.com/ZWLFI/zmarkdown')"
+        >zmarkdown</a>
         ·
-        <a href="#" @click.prevent="openExternal('https://github.com/lixiaoshuang79/momark')"
-          >GitHub 仓库</a
-        >
+        <a
+          href="#"
+          @click.prevent="openExternal('https://github.com/ZWLFI/zmarkdown')"
+        >GitHub 仓库</a>
         ·
-        <a href="#" @click.prevent="openExternal('https://github.com/lixiaoshuang79/momark/issues')"
-          >问题反馈</a
-        >
+        <a
+          href="#"
+          @click.prevent="openExternal('https://github.com/ZWLFI/zmarkdown/issues')"
+        >问题反馈</a>
       </div>
 
       <div class="thanks">
@@ -66,99 +51,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onMounted } from 'vue'
 import { t } from '../i18n'
 import { useMainStore } from '@/store'
 import { addThemeStyle } from '@/util/theme'
-import type { IUpdateInfo } from '@shared/types/ipc'
 import MoMarkLogo from '@/assets/images/logo.png'
 
 const mainStore = useMainStore()
 const version = computed(() => mainStore.appVersion || '0.1.0')
-
-/** 更新流程的状态机：查 → 有/无新版 → 下载 → 解压 → 提权安装（此时应用会退出重启）。 */
-type TUpdateState =
-  | 'idle'
-  | 'checking'
-  | 'latest'
-  | 'available'
-  | 'downloading'
-  | 'extracting'
-  | 'installing'
-  | 'error'
-
-const state = ref<TUpdateState>('idle')
-const info = ref<IUpdateInfo | null>(null)
-const progress = ref({ received: 0, total: 0 })
-/** 失败原因（已本地化）；空串 = 常规失败文案。 */
-const failureText = ref('')
-let stopProgress: (() => void) | null = null
-
-const percent = computed(() =>
-  progress.value.total
-    ? Math.min(100, Math.round((progress.value.received / progress.value.total) * 100))
-    : 0
-)
-
-/**
- * 把主进程返回的失败原因翻成人能看懂的一类。
- * GitHub 匿名 API 有 60 次/小时的限流，「请求过于频繁」值得单独提示；
- * `HTTP 5xx` 是对方服务端的事；其余（含 fetch 抛错）按网络不通处理。
- */
-const classifyFailure = (raw?: string): string => {
-  if (!raw) return t('about.updateFailed')
-  if (/HTTP 403|HTTP 429/.test(raw)) return t('about.updateRateLimited')
-  if (/HTTP 5\d\d/.test(raw)) return t('about.updateServerError')
-  if (!/^HTTP \d/.test(raw)) return t('about.updateNetworkError')
-  return `${t('about.updateFailed')}（${raw}）`
-}
-
-const checkForUpdate = async (): Promise<void> => {
-  state.value = 'checking'
-  failureText.value = ''
-
-  try {
-    const result = await window.electron.updater.check()
-
-    if (result.error || !result.info) {
-      failureText.value = classifyFailure(result.error)
-      state.value = 'error'
-      return
-    }
-
-    if (result.hasUpdate && result.info.assetUrl) {
-      info.value = result.info
-      state.value = 'available'
-    } else {
-      state.value = 'latest'
-    }
-  } catch {
-    state.value = 'error'
-  }
-}
-
-const startInstall = async (): Promise<void> => {
-  if (!info.value) return
-
-  state.value = 'downloading'
-  progress.value = { received: 0, total: 0 }
-  stopProgress?.()
-  stopProgress = window.electron.updater.onProgress((p) => {
-    if (p.phase === 'extract') state.value = 'extracting'
-    else progress.value = { received: p.received, total: p.total }
-  })
-
-  try {
-    const { appPath } = await window.electron.updater.download(info.value)
-    state.value = 'installing'
-    // 成功后主进程会退出重启（安装脚本接管），这里等不到返回也正常
-    await window.electron.updater.install(appPath)
-  } catch {
-    stopProgress?.()
-    stopProgress = null
-    state.value = 'error'
-  }
-}
 
 const openRelease = (): void => {
   window.electron.updater.openRelease()
@@ -178,9 +78,6 @@ onMounted(() => {
   applyInitialTheme()
 })
 
-onBeforeUnmount(() => {
-  stopProgress?.()
-})
 </script>
 
 <style scoped>

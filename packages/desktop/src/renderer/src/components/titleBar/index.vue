@@ -19,7 +19,7 @@
            时以竖线分隔显示在窗口顶栏；右文档名可拖回标签栏（分屏=回标签集合、
            预览=建成标签），× 关闭右栏文档。平时仍为「…/目录/文件名」。 -->
       <div class="title" @dblclick.stop="toggleMaxmizeOnMacOS">
-        <div v-if="filename || pathname" class="title-path" :style="titleFontStyle">
+        <div v-if="(filename || pathname) && (tabCount ?? 0) <= 1" class="title-path" :style="titleFontStyle">
           <span class="title-dot" :class="{ show: !isSaved }" />
           <!-- round13（用户拍板）：双击标题就地重命名——标题位置直接变输入框，
                不再弹重命名对话框（untitled 仍走旧行为：双击=保存即命名）。 -->
@@ -85,7 +85,7 @@
             </button>
           </template>
         </div>
-        <div v-else class="title-brand">墨记</div>
+        <div v-else class="title-brand">zmarkdown</div>
       </div>
 
       <!-- round10：底部状态栏移除后，字数+保存状态放右上角（与顶栏同排）。

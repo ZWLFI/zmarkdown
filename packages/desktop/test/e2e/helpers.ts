@@ -365,3 +365,11 @@ export const sendIpcToRenderer = async(
     { channel, args }
   )
 }
+
+/** Test fixtures own only temporary documents; teardown must not wait on a native save dialog. */
+export const closeTestApp = async(app: ElectronApplication): Promise<void> => {
+  await app.evaluate(({ BrowserWindow }) => {
+    for (const win of BrowserWindow.getAllWindows()) win.destroy()
+  })
+  await app.close()
+}

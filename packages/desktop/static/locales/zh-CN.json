@@ -93,22 +93,22 @@
       "askQuestion": "提问",
       "reportBug": "报告错误",
       "viewSource": "查看源码",
-      "followUs": "关注墨记",
-      "support": "支持墨记",
+      "followUs": "关注zmarkdown",
+      "support": "支持zmarkdown",
       "license": "许可证",
       "about": "关于",
       "checkUpdates": "检查更新"
     },
     "marktext": {
-      "title": "墨记",
-      "about": "关于墨记",
+      "title": "zmarkdown",
+      "about": "关于zmarkdown",
       "checkUpdates": "检查更新…",
       "preferences": "偏好设置",
       "services": "服务",
-      "hide": "隐藏墨记",
+      "hide": "隐藏zmarkdown",
       "hideOthers": "隐藏其他",
       "showAll": "显示全部",
-      "quit": "退出墨记"
+      "quit": "退出zmarkdown"
     },
     "view": {
       "view": "视图",
@@ -117,7 +117,7 @@
       "commandPalette": "命令面板",
       "sourceCodeMode": "源码模式",
       "typewriterMode": "打字机模式",
-      "focusMode": "专注模式",
+      "focusMode": "全屏阅读",
       "toggleTableOfContents": "切换目录",
       "reloadImages": "重新加载图片",
       "showDeveloperTools": "显示开发者工具",
@@ -276,7 +276,7 @@
       "selectLanguage": "选择要切换的语言"
     },
     "groups": {
-      "momark": "墨记",
+      "momark": "zmarkdown",
       "file": "文件",
       "edit": "编辑",
       "view": "视图",
@@ -390,7 +390,7 @@
   },
   "import": {
     "title": "导入或打开",
-    "description": "拖放到这里将您的内容导入 MoMark"
+    "description": "拖放到这里将您的内容导入 zmarkdown"
   },
   "preferences": {
     "title": "偏好设置",
@@ -419,10 +419,10 @@
         "hideScrollbar": "是否隐藏滚动条",
         "wordWrapInToc": "是否在目录中启用自动换行",
         "fileSortBy": "按创建时间、修改时间和标题对打开文件夹中的文件进行排序",
-        "startUpAction": "MoMark 启动后的操作，打开最后编辑的内容、打开指定文件夹或空白页",
+        "startUpAction": "zmarkdown 启动后的操作，打开最后编辑的内容、打开指定文件夹或空白页",
         "restoreLayoutState": "启动时恢复上次编辑器状态",
         "defaultDirectoryToOpen": "当 startUp=folder 时启动时应打开的默认目录",
-        "language": "MoMark 使用的语言",
+        "language": "zmarkdown 使用的语言",
         "editorFontFamily": "编辑器字体系列",
         "fontSize": "字体大小（像素）",
         "lineHeight": "行高",
@@ -446,7 +446,7 @@
         "preferLooseListItem": "首选列表类型",
         "bulletListMarker": "项目符号列表中使用的标记",
         "orderListDelimiter": "有序列表中使用的分隔符",
-        "preferHeadingStyle": "MoMark 中的首选标题样式",
+        "preferHeadingStyle": "zmarkdown 中的首选标题样式",
         "tabSize": "用 x 个空格替换制表符",
         "listIndentation": "选择列表的缩进",
         "frontmatterType": "前言类型",
@@ -456,7 +456,7 @@
         "isGitlabCompatibilityEnabled": "启用 GitLab 兼容模式",
         "sequenceTheme": "序列图主题",
         "plantumlServer": "PlantUML 服务器 URL",
-        "theme": "选择 MoMark 中使用的主题",
+        "theme": "选择 zmarkdown 中使用的主题",
         "followSystemTheme": "跟随系统主题",
         "lightModeTheme": "系统处于浅色模式时使用的主题",
         "darkModeTheme": "系统处于深色模式时使用的主题",
@@ -507,7 +507,9 @@
         "hideScrollbars": "隐藏滚动条",
         "openFilesInNewWindow": "在新窗口中打开文件",
         "openFoldersInNewWindow": "在新窗口中打开文件夹",
-        "zoom": "缩放"
+        "zoom": "缩放",
+        "showStatusBar": "显示底部状态栏",
+        "showStatusBarNotes": "显示保存状态、字数和阅读控制；修改即时生效。"
       },
       "startup": {
         "title": "启动",
@@ -567,7 +569,8 @@
         "lineHeight": "行高",
         "fontFamily": "字体系列",
         "maxWidth": "最大宽度",
-        "maxWidthNotes": "编辑器内容的最大宽度"
+        "maxWidthNotes": "编辑器内容的最大宽度",
+        "readingWidth": "正文宽度模式"
       },
       "codeBlock": {
         "title": "代码块",
@@ -673,7 +676,7 @@
         "pleaseInstall": "请安装",
         "scriptPath": "脚本路径"
       },
-      "defaultBehavior": "粘贴或拖拽图片到 MoMark 后的默认行为",
+      "defaultBehavior": "粘贴或拖拽图片到 zmarkdown 后的默认行为",
       "insertBehavior": "插入动作",
       "insertBehaviorSub": "粘贴或拖入图片后的行为。",
       "behavior": {
@@ -832,7 +835,7 @@
   },
   "commands": {
     "mt": {
-      "hide": "隐藏墨记",
+      "hide": "隐藏zmarkdown",
       "hideOthers": "隐藏其他"
     },
     "file": {
@@ -934,7 +937,7 @@
       "commandPalette": "命令面板",
       "sourceCodeMode": "源码模式",
       "typewriterMode": "打字机模式",
-      "focusMode": "专注模式",
+      "focusMode": "全屏阅读",
       "toggleSourceCodeMode": "切换源码模式",
       "toggleTypewriterMode": "切换打字机模式",
       "toggleFocusMode": "切换专注模式",
@@ -1002,7 +1005,7 @@
     "configSchemaViolation": "配置架构违规",
     "copyError": "复制错误",
     "initializationFailed": "初始化失败 {hint}",
-    "otherInstanceDetected": "检测到 MoMark 的另一个实例正在运行",
+    "otherInstanceDetected": "检测到 zmarkdown 的另一个实例正在运行",
     "report": "报告",
     "startupError": "启动错误",
     "terminatedDueToError": "由于错误而终止",
@@ -1015,7 +1018,7 @@
     "defaultTitle": "通知",
     "confirm": "了解详情",
     "chromeCookieGuideTitle": "打通 Chrome 登录态",
-    "chromeCookieGuideMessage": "想让右侧浏览器直接复用 Chrome 的登录状态（免重新输密码），请在系统设置中给墨记授予「完全磁盘访问权限」，然后重启墨记。"
+    "chromeCookieGuideMessage": "想让右侧浏览器直接复用 Chrome 的登录状态（免重新输密码），请在系统设置中给zmarkdown授予「完全磁盘访问权限」，然后重启zmarkdown。"
   },
   "store": {
     "editor": {
@@ -1202,7 +1205,7 @@
     }
   },
   "welcome": {
-    "windowTitle": "欢迎使用墨记",
+    "windowTitle": "欢迎使用zmarkdown",
     "hi": "欢迎",
     "hiSub": "所见即所得的 Markdown 编辑体验\n优雅分屏浏览 · 专注沉浸写作",
     "newDocument": "新建文档",
@@ -1212,5 +1215,16 @@
     "noRecentText": "还没有打开过文档\n从左侧「新建文档」开始你的第一篇",
     "timeToday": "今天",
     "timeYesterday": "昨天"
+  },
+  "workspace": {
+    "words": "字",
+    "comfortable": "舒适阅读",
+    "wide": "宽屏布局",
+    "focus": "全屏阅读",
+    "exitFocus": "退出全屏阅读",
+    "openFiles": "打开的文件",
+    "filterFiles": "筛选文件",
+    "refreshFiles": "刷新文件",
+    "noMatches": "没有匹配的文件"
   }
 }

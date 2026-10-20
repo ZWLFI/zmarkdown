@@ -1,6 +1,8 @@
 <template>
   <div class="title-bar">
-    <div
+    <button
+      type="button"
+      :aria-label="t('dialog.close')"
       class="frameless-titlebar-button frameless-titlebar-close"
       @click.stop="handleCloseClick"
     >
@@ -12,11 +14,15 @@
           <path :d="windowIconClose" />
         </svg>
       </div>
-    </div>
+    </button>
   </div>
 </template>
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
+
 import { closePath as windowIconClose } from '../../assets/window-controls'
 
 const handleCloseClick = () => {
@@ -31,7 +37,7 @@ const handleCloseClick = () => {
   background: transparent;
   height: var(--titleBarHeight);
   box-sizing: border-box;
-  color: var(--editorColor50);
+  color: var(--muted);
   position: fixed;
   left: 0;
   top: 0;
@@ -42,6 +48,10 @@ const handleCloseClick = () => {
 }
 
 .frameless-titlebar-button {
+  border: none;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
   position: absolute;
   display: block;
   top: 0;
@@ -64,7 +74,7 @@ const handleCloseClick = () => {
 }
 
 .frameless-titlebar-button svg {
-  fill: #000000;
+  fill: currentColor;
 }
 
 .frameless-titlebar-close:hover svg {

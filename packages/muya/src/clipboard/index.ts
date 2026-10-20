@@ -134,20 +134,29 @@ class Clipboard {
 
     copyAsMarkdown() {
         this.copyType = CopyType.COPY_AS_MARKDOWN;
-        document.execCommand('copy');
-        this.copyType = CopyType.NORMAL;
+        try {
+            return document.execCommand('copy');
+        } finally {
+            this.copyType = CopyType.NORMAL;
+        }
     }
 
     copyAsHtml() {
         this.copyType = CopyType.COPY_AS_HTML;
-        document.execCommand('copy');
-        this.copyType = CopyType.NORMAL;
+        try {
+            return document.execCommand('copy');
+        } finally {
+            this.copyType = CopyType.NORMAL;
+        }
     }
 
     copyAsRich() {
         this.copyType = CopyType.COPY_AS_RICH;
-        document.execCommand('copy');
-        this.copyType = CopyType.NORMAL;
+        try {
+            return document.execCommand('copy');
+        } finally {
+            this.copyType = CopyType.NORMAL;
+        }
     }
 
     // Chromium removed programmatic clipboard reads via
@@ -198,8 +207,11 @@ class Clipboard {
     copy(type: CopyType, info: string) {
         this.copyType = type;
         this.copyInfo = info;
-        document.execCommand('copy');
-        this.copyType = CopyType.NORMAL;
+        try {
+            return document.execCommand('copy');
+        } finally {
+            this.copyType = CopyType.NORMAL;
+        }
     }
 }
 

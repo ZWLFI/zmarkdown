@@ -70,6 +70,7 @@ export interface PreferencesState {
   codeBlockLineNumbers: boolean
   trimUnnecessaryCodeBlockEmptyLines: boolean
   wrapCodeBlocks: boolean
+  showStatusBar: boolean
   editorLineWidth: string
 
   // ----- Markdown editing -----
@@ -192,7 +193,8 @@ export const usePreferencesStore = defineStore('preferences', {
     codeBlockLineNumbers: false,
     trimUnnecessaryCodeBlockEmptyLines: true,
     wrapCodeBlocks: false,
-    editorLineWidth: '100%',
+    showStatusBar: true,
+    editorLineWidth: '720px',
 
     autoPairBracket: true,
     autoPairMarkdownSyntax: true,

@@ -220,3 +220,55 @@
     border-radius: var(--radius-sm);
   }
 }
+@media not print {
+  .is-claude-theme .mu-container mark:not([style]) {
+    background: color-mix(in srgb, #e9c65a 24%, var(--bg));
+    color: inherit;
+    border-radius: 2px;
+  }
+  .is-claude-theme .mu-container :is(h2, h3, h4, h5, h6) { line-height: 1.45; }
+}
+
+/* Reading rhythm and bounded media; presentation only, no Markdown changes. */
+@media not print {
+  .is-claude-theme .mu-container { overflow-wrap: anywhere; }
+  .is-claude-theme .mu-container h1 { margin-bottom: 20px; }
+  .is-claude-theme .mu-container p { margin: 10px 0; }
+  .is-claude-theme .mu-container :is(ul, ol) { margin: 10px 0; }
+  .is-claude-theme .mu-container li { margin: 4px 0; }
+  .is-claude-theme .mu-container li :is(p, ul, ol) { margin: 4px 0; }
+  .is-claude-theme .mu-container blockquote { padding-inline: 18px; margin-block: 18px; }
+  .is-claude-theme .mu-container :is(.mu-code-block, .mu-table) { max-width: 100%; box-sizing: border-box; margin-block: 16px; }
+  .is-claude-theme .mu-table { overflow-x: auto; }
+  .is-claude-theme .mu-table-inner { min-width: 100%; }
+  .is-claude-theme .mu-table-cell-content { min-width: 80px; }
+  .is-claude-theme .mu-code-block .mu-code { overflow-x: auto; overscroll-behavior-x: contain; }
+  .is-claude-theme .mu-code-copy { opacity: .65; background: var(--surface-2); border: 1px solid var(--line); }
+  .is-claude-theme .mu-code-copy:focus-visible { opacity: 1; outline: 2px solid var(--accent); }
+  .is-claude-theme .mu-code-copy[data-copied]::after { content: '✓'; position: absolute; inset: 0; text-align: center; color: var(--accent); background: var(--surface-2); border-radius: 4px; }
+  .is-claude-theme .mu-inline-image { max-width: 100%; }
+  .is-claude-theme .mu-inline-image .mu-image-container img { max-height: 65vh; width: auto; height: auto; object-fit: contain; }
+  .is-claude-theme .mu-inline-image:is(.mu-image-fail, .mu-image-loading, .mu-empty-image) { box-sizing: border-box; border: 1px dashed var(--line-strong); background: var(--surface-0); }
+  .is-claude-theme .mu-inline-image.mu-image-fail { border-color: var(--danger); }
+  .is-claude-theme .mu-inline-image-selected .mu-image-container { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: var(--radius-sm); }
+  .is-claude-theme .mu-math { margin-block: 18px; overflow-x: auto; }
+}
+
+@media not print {
+  /* Reserve room for the heading action, including split panes with no right gutter. */
+  .is-claude-theme .mu-container :is(h1,h2,h3,h4,h5,h6) { padding-right: 28px; box-sizing: border-box; }
+  .is-claude-theme .mu-container .mu-copy-header-link { right: 2px; }
+}
+@media not print {
+  .is-claude-theme .mu-container blockquote::before { left: 0; }
+  .is-claude-theme li.mu-task-list-item > :is(input, .mu-task-list-checkbox)::before { box-shadow: none; }
+  [data-theme='dark'] .is-claude-theme .mu-code-block .token:is(.string, .attr-value) { color: #afc996; }
+  [data-theme='dark'] .is-claude-theme .mu-code-block .token:is(.comment, .prolog) { color: #9ba6b3; }
+  [data-theme='dark'] .is-claude-theme .mu-code-block .token:is(.keyword, .boolean) { color: #86b8df; }
+  [data-theme='dark'] .is-claude-theme .mu-code-block .token:is(.function, .number) { color: #d1a6cf; }
+  [data-theme='dark'] .is-claude-theme .mu-code-block .token:is(.operator, .punctuation) { color: #c1c9d5; background: none; }
+}
+/* Editor floats live outside the preview overlay; keep them out of image viewing. */
+body:has(.image-viewer:not([style*='display: none'])) :is(.mu-float-wrapper, .mu-transformer, .mu-front-button-wrapper) {
+  display: none !important;
+}

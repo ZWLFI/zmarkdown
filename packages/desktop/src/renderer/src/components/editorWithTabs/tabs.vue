@@ -1,5 +1,9 @@
 <template>
-  <div ref="tabsRoot" class="editor-tabs" :class="{ single: scene === 'single' }">
+  <div
+    ref="tabsRoot"
+    class="editor-tabs"
+    :class="{ single: scene === 'single' }"
+  >
     <button
       class="tb-toggle"
       :class="{ on: showSideBar }"
@@ -22,14 +26,17 @@
         :key="file.id"
         class="tab"
         :class="{ active: currentFile?.id === file.id, dirty: !file.isSaved }"
-        :title="file.pathname"
+        :title="file.pathname || file.filename"
         :data-id="file.id"
         @click.stop="selectFile(file)"
         @click.middle="closeTab(file.id)"
         @contextmenu.prevent="handleContextMenu($event, file)"
       >
         <span class="tname">
-          <span class="tn" :data-label="file.filename">
+          <span
+            class="tn"
+            :data-label="file.filename"
+          >
             <span class="tn-text">{{ file.filename }}</span>
           </span>
           <span class="dot" />
@@ -44,13 +51,26 @@
         </button>
       </div>
       <!-- 活动标签底部独立滑轨：独立元素，不随标签重建（PHASE2-SPEC §2） -->
-      <span ref="indicator" class="tab-indicator" />
+      <span
+        ref="indicator"
+        class="tab-indicator"
+      />
       <!-- round12（用户拍板）：标签条最右 hover 显现的新建按钮——
            点击新建 untitled 未保存文件。 -->
-      <button class="tab-new" :title="t('tabs.newTab')" @click.stop="newUntitled">
+      <button
+        class="tab-new"
+        :title="t('tabs.newTab')"
+        @click.stop="newUntitled"
+      >
         <mo-icon name="i-plus" />
       </button>
     </div>
+
+    <!-- Native draggable blank space stays available even when tabs overflow. -->
+    <div
+      class="window-drag-region"
+      aria-hidden="true"
+    />
 
     <!-- 右栏文档指示已移到窗口顶栏（titleBar，「文件A | 文件B」竖线分隔、
          可拖回标签栏）。 -->
@@ -63,6 +83,27 @@
     >
       <mo-icon :name="bpanelOpen ? 'i-x' : 'i-partition'" />
     </button>
+    <select
+      class="open-files"
+      :aria-label="t('workspace.openFiles')"
+      :title="t('workspace.openFiles')"
+      :value="''"
+      @change="selectOpenFile"
+    >
+      <option
+        value=""
+        disabled
+      >
+        {{ t('workspace.openFiles') }} ({{ tabs.length }})
+      </option>
+      <option
+        v-for="file in tabs"
+        :key="file.id"
+        :value="file.id"
+      >
+        {{ file.isSaved ? '' : '● ' }}{{ file.pathname || file.filename }}
+      </option>
+    </select>
     <bp-modes :shown="bpanelOpen" />
   </div>
 </template>
@@ -171,6 +212,12 @@ const selectFile = (file: IFileState) => {
   // 起跳信号：editor.vue 监听此事件，同步起跳后再落地切换。
   document.dispatchEvent(new CustomEvent('momark:tab-enter', { detail: { direction } }))
   editorStore.UPDATE_CURRENT_FILE(file)
+}
+
+const selectOpenFile = (event: Event) => {
+  const file = tabs.value.find((file) => file.id === (event.target as HTMLSelectElement).value)
+  if (file) selectFile(file)
+  ;(event.target as HTMLSelectElement).value = ''
 }
 
 const removeFileInTab = (file: IFileState) => {
@@ -688,7 +735,7 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  opacity: 0;
+  opacity: 1;
   transition:
     opacity 0.16s ease,
     background 0.15s ease,
@@ -712,7 +759,7 @@ onBeforeUnmount(() => {
 .tab {
   position: relative;
   flex: 0 0 auto;
-  max-width: 420px;
+  max-width: 220px;
   height: 36px;
   background: transparent;
   border-radius: 8px 8px 0 0;
@@ -870,5 +917,57 @@ onBeforeUnmount(() => {
 }
 .gu-transit {
   opacity: 0.2;
+}
+</style>
+
+<style scoped>
+.open-files {
+  max-width: 120px;
+  margin: 0 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--muted);
+  padding: 4px;
+  font-size: 12px;
+}
+</style>
+
+<style scoped>
+.tab .tname,
+.tab.active .tname {
+  font-size: 13px;
+  transition: none;
+}
+.tab .tname .tn {
+  display: block;
+}
+.tab .tname .tn::after {
+  content: none;
+}
+.tab .tname .tn-text {
+  display: block;
+}
+</style>
+
+<style>
+.compact-mac .editor-tabs {
+  padding-left: 88px;
+  -webkit-app-region: drag;
+}
+.compact-mac .editor-tabs :is(button, select, .tabstrip, .bp-modes) {
+  -webkit-app-region: no-drag;
+}
+.window-drag-region { display: none; }
+.compact-mac .window-drag-region {
+  display: block;
+  flex: 0 0 48px;
+  height: 36px;
+  -webkit-app-region: drag;
+}
+@media (max-width: 760px) {
+  .compact-mac .editor-tabs { padding-right: 6px; }
+  .compact-mac .window-drag-region { flex-basis: 32px; }
+  .compact-mac .open-files { max-width: 100px; }
 }
 </style>

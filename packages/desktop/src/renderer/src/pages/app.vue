@@ -1,7 +1,12 @@
 <template>
-  <div class="editor-container">
+  <div
+    class="editor-container"
+    :style="focusReadingWidth ? { '--focus-reading-width': focusReadingWidth } : undefined"
+    :class="{ 'distraction-free': focus, 'focus-right': focus && focusRight, 'wide-reading': editorLineWidth === '100%', 'compact-mac': platform === 'darwin' }"
+  >
     <div class="editor-middle">
       <title-bar
+        v-if="platform !== 'darwin'"
         :project="projectTree"
         :pathname="pathname"
         :filename="filename"
@@ -9,25 +14,32 @@
         :platform="platform"
         :is-saved="isSaved"
         :tab-count="titleTabCount"
-        :title-word-count="titleStats.wordCount"
-        :title-saved="titleStats.isSaved"
       />
 
       <!-- 标签栏：win-body 之上的全宽行（PHASE2-SPEC §1：标题栏 40px /
            标签栏 40px）。面包屑行已按用户要求取消——路径信息只在顶栏显示。
            单文档态同样渲染该行（只保留两端侧栏开关、标签条隐藏）：
            左右开关单/多文档位置统一（用户拍板）。 -->
-      <div v-if="(hasCurrentFile || splitActive) && init" class="editor-chrome">
+      <div
+        v-if="init"
+        class="editor-chrome"
+      >
         <editor-tabs />
       </div>
 
       <!-- 主体三栏：侧栏 / 编辑区列 / 分隔线 / 右侧浏览器面板
            （PHASE2-SPEC §1/§3：win-body 行从面包屑行之下开始） -->
-      <div class="win-body" :class="winBodyClasses">
+      <div
+        class="win-body"
+        :class="winBodyClasses"
+      >
         <side-bar v-if="init" />
 
         <div class="editor-main-col">
-          <div v-if="!init" class="editor-placeholder" />
+          <div
+            v-if="!init"
+            class="editor-placeholder"
+          />
           <recent v-if="!hasCurrentFile && init" />
           <editor-with-tabs
             v-if="hasCurrentFile && init"
@@ -45,8 +57,40 @@
         <browser-panel />
       </div>
 
-      <!-- round10：底部状态栏已移除——侧栏/编辑区直接延伸到窗口底，
-           字数/保存状态上移至顶栏右上角（titleBar）-->
+      <footer
+        v-if="hasCurrentFile && showStatusBar"
+        class="workspace-status"
+      >
+        <span
+          class="save-state"
+          :class="{ dirty: !titleStats.isSaved }"
+        >
+          {{ titleStats.isSaved ? t('statusBar.saved') : t('statusBar.unsaved') }}
+        </span>
+        <span>{{ titleStats.wordCount?.word ?? 0 }} {{ t('workspace.words') }}</span>
+        <div class="status-actions">
+          <button
+            :aria-pressed="editorLineWidth !== '100%'"
+            @click="toggleReadingWidth"
+          >
+            {{ editorLineWidth === '100%' ? t('workspace.comfortable') : t('workspace.wide') }}
+          </button>
+          <button
+            :aria-pressed="focus"
+            @click="toggleFocus"
+          >
+            {{ t('workspace.focus') }} · ⌃B
+          </button>
+        </div>
+      </footer>
+      <button
+        v-if="focus"
+        class="focus-exit"
+        @mousedown.prevent
+        @click="toggleFocus"
+      >
+        {{ t('workspace.exitFocus') }} · ⌃B
+      </button>
 
       <command-palette />
       <export-setting-dialog />
@@ -76,6 +120,7 @@ import BrowserPanel from '@/components/browserPanel/index.vue'
 import Splitter from '@/components/splitter.vue'
 import SplitDropZone from '@/components/splitDropZone.vue'
 import bus from '@/bus'
+import { t } from '@/i18n'
 import { DEFAULT_STYLE } from '@/config'
 import { useLayoutStore } from '@/store/layout'
 import { useListenForMainStore } from '@/store/listenForMain'
@@ -128,8 +173,46 @@ const workspaceStore = useWorkspaceStore()
 
 const timer = ref<ReturnType<typeof setTimeout> | null>(null)
 
+const toggleFocus = () => bus.emit('view:toggle-view-entry', 'focus')
+const toggleReadingWidth = () =>
+  preferencesStore.SET_SINGLE_PREFERENCE({
+    type: 'editorLineWidth',
+    value: editorLineWidth.value === '100%' ? '720px' : '100%'
+  })
+const focusRight = ref(false)
+const focusReadingWidth = ref('')
+let focusScroll: Array<{ element: Element; top: number; left: number }> = []
+watch(
+  () => preferencesStore.focus,
+  async (enabled) => {
+    if (enabled) {
+      focusRight.value = splitStore.active && splitStore.docFocused && bpStore.activeTab === 'doc'
+      const readingArea = document.querySelector(
+        focusRight.value ? '.bpanel .mu-container' : '.editor-main-col .mu-container'
+      )
+      focusReadingWidth.value = readingArea ? `${readingArea.getBoundingClientRect().width}px` : ''
+      focusScroll = Array.from(document.querySelectorAll('.editor-component, .source-code')).map(
+        (element) => ({
+          element,
+          top: element.scrollTop,
+          left: element.scrollLeft
+        })
+      )
+    } else {
+      await nextTick()
+      requestAnimationFrame(() => {
+        for (const { element, top, left } of focusScroll) {
+          if (element.isConnected) element.scrollTo(left, top)
+        }
+        focusScroll = []
+      })
+    }
+  }
+)
+
 const { windowActive, platform, init } = storeToRefs(mainStore)
-const { sourceCode, theme, customCss, textDirection, zoom } = storeToRefs(preferencesStore)
+const { sourceCode, theme, customCss, textDirection, zoom, focus, editorLineWidth, showStatusBar } =
+  storeToRefs(preferencesStore)
 const { projectTree } = storeToRefs(projectStore)
 const { currentFile, tabs } = storeToRefs(editorStore)
 const { open: bpanelOpen } = storeToRefs(bpStore)
@@ -381,5 +464,86 @@ onMounted(async () => {
   min-width: 0;
   display: flex;
   flex-direction: column;
+}
+</style>
+
+<style>
+.workspace-status {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex: none;
+  min-height: 24px;
+  padding: 0 12px;
+  box-sizing: border-box;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  background: var(--bg);
+  font-size: 12px;
+}
+.editor-container.wide-reading {
+  --editor-pad: 20px 16px 140px;
+}
+.workspace-status .dirty {
+  color: var(--accent);
+}
+.status-actions {
+  margin-left: auto;
+  display: flex;
+  gap: 12px;
+}
+.workspace-status button,
+.focus-exit {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font: inherit;
+}
+.workspace-status button:hover,
+.focus-exit:hover {
+  color: var(--accent);
+}
+.focus-exit {
+  position: absolute;
+  right: 16px;
+  top: 10px;
+  z-index: 100;
+  -webkit-app-region: no-drag;
+  font-size: 12px;
+}
+.distraction-free .editor-chrome,
+.distraction-free .side-bar,
+.distraction-free:not(.focus-right) .bpanel,
+.distraction-free.focus-right .editor-main-col,
+.distraction-free .bp-doc-actions,
+.distraction-free .splitter,
+.distraction-free .split-drop-zone,
+.distraction-free .workspace-status {
+  display: none !important;
+}
+.distraction-free .editor-with-tabs {
+  max-width: 100% !important;
+}
+.distraction-free .win-body .editor-component {
+  margin-right: 0;
+}
+.editor-container.distraction-free .win-body .editor-component .mu-container {
+  max-width: var(--focus-reading-width, var(--editor-area-width));
+  margin-inline: auto;
+  padding: var(--editor-pad);
+}
+.distraction-free.focus-right .bpanel {
+  width: 100% !important;
+  transition: none;
+}
+.distraction-free.focus-right .bp-inner {
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+.distraction-free .title-bar .title {
+  visibility: hidden;
 }
 </style>

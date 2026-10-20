@@ -94,21 +94,21 @@
       "reportBug": "Report Bug",
       "viewSource": "View Source",
       "followUs": "Follow Us",
-      "support": "Support MoMark",
+      "support": "Support zmarkdown",
       "license": "License",
       "about": "About",
       "checkUpdates": "Check for Updates"
     },
     "marktext": {
-      "title": "MoMark",
-      "about": "About MoMark",
+      "title": "zmarkdown",
+      "about": "About zmarkdown",
       "checkUpdates": "Check for Updates...",
       "preferences": "Preferences",
       "services": "Services",
-      "hide": "Hide MoMark",
+      "hide": "Hide zmarkdown",
       "hideOthers": "Hide Others",
       "showAll": "Show All",
-      "quit": "Quit MoMark"
+      "quit": "Quit zmarkdown"
     },
     "view": {
       "view": "View",
@@ -117,7 +117,7 @@
       "commandPalette": "Command Palette",
       "sourceCodeMode": "Source Code Mode",
       "typewriterMode": "Typewriter Mode",
-      "focusMode": "Focus Mode",
+      "focusMode": "Fullscreen Reading",
       "toggleTableOfContents": "Toggle Table of Contents",
       "reloadImages": "Reload Images",
       "showDeveloperTools": "Show Developer Tools",
@@ -274,7 +274,7 @@
       "selectLanguage": "Select a language to switch to"
     },
     "groups": {
-      "momark": "MoMark",
+      "momark": "zmarkdown",
       "file": "File",
       "edit": "Edit",
       "view": "View",
@@ -388,7 +388,7 @@
   },
   "import": {
     "title": "Import or Open",
-    "description": "Drop here to get your stuff into MoMark"
+    "description": "Drop here to get your stuff into zmarkdown"
   },
   "preferences": {
     "title": "Preferences",
@@ -416,10 +416,10 @@
         "hideScrollbar": "Whether to hide scrollbars",
         "wordWrapInToc": "Whether to enable word wrap in TOC",
         "fileSortBy": "Sort files in opened folder by created time, modified time and title",
-        "startUpAction": "The action after MoMark startup, open the last edited content, open the specified folder or blank page",
+        "startUpAction": "The action after zmarkdown startup, open the last edited content, open the specified folder or blank page",
         "restoreLayoutState": "Restore previous editor state on startup",
         "defaultDirectoryToOpen": "The default directory that should be opened on startup when startUp=folder",
-        "language": "The language MoMark uses",
+        "language": "The language zmarkdown uses",
         "editorFontFamily": "Editor font family",
         "fontSize": "Font size in pixels",
         "lineHeight": "Line Height",
@@ -443,7 +443,7 @@
         "preferLooseListItem": "The preferred list type",
         "bulletListMarker": "The marker used in bullet list",
         "orderListDelimiter": "The delimiter used in order list",
-        "preferHeadingStyle": "The preferred heading style in MoMark",
+        "preferHeadingStyle": "The preferred heading style in zmarkdown",
         "tabSize": "Replace the tab with x spaces",
         "listIndentation": "Select the indent of list",
         "frontmatterType": "The frontmatter type",
@@ -453,7 +453,7 @@
         "isGitlabCompatibilityEnabled": "Enable GitLab compatibility mode",
         "sequenceTheme": "Sequence diagram theme",
         "plantumlServer": "PlantUML server URL",
-        "theme": "Select the theme used in MoMark",
+        "theme": "Select the theme used in zmarkdown",
         "followSystemTheme": "Follow System Theme",
         "lightModeTheme": "Theme to use when system is in light mode",
         "darkModeTheme": "Theme to use when system is in dark mode",
@@ -505,7 +505,9 @@
         "hideScrollbars": "Hide scrollbars",
         "openFilesInNewWindow": "Open files in new window",
         "openFoldersInNewWindow": "Open folders in new window",
-        "zoom": "Zoom"
+        "zoom": "Zoom",
+        "showStatusBar": "Show status bar",
+        "showStatusBarNotes": "Show save state, word count and reading controls. Takes effect immediately."
       },
       "startup": {
         "title": "Startup Options",
@@ -565,7 +567,8 @@
         "lineHeight": "Line height",
         "fontFamily": "Font family",
         "maxWidth": "Max width",
-        "maxWidthNotes": "Maximum width of editor content"
+        "maxWidthNotes": "Maximum width of editor content",
+        "readingWidth": "Reading width"
       },
       "codeBlock": {
         "title": "Code Block",
@@ -671,7 +674,7 @@
         "pleaseInstall": "Please install",
         "scriptPath": "Script path"
       },
-      "defaultBehavior": "The default behavior after pasting or dragging the image to MoMark",
+      "defaultBehavior": "The default behavior after pasting or dragging the image to zmarkdown",
       "insertBehavior": "Insert action",
       "insertBehaviorSub": "What happens after pasting or dropping an image.",
       "behavior": {
@@ -830,7 +833,7 @@
   },
   "commands": {
     "mt": {
-      "hide": "Hide MoMark",
+      "hide": "Hide zmarkdown",
       "hideOthers": "Hide Others"
     },
     "file": {
@@ -932,7 +935,7 @@
       "commandPalette": "Command Palette",
       "sourceCodeMode": "Source Code Mode",
       "typewriterMode": "Typewriter Mode",
-      "focusMode": "Focus Mode",
+      "focusMode": "Fullscreen Reading",
       "toggleSourceCodeMode": "Toggle Source Code Mode",
       "toggleTypewriterMode": "Toggle Typewriter Mode",
       "toggleFocusMode": "Toggle Focus Mode",
@@ -1000,7 +1003,7 @@
     "configSchemaViolation": "Configuration schema violation",
     "copyError": "Copy error",
     "initializationFailed": "Initialization failed {hint}",
-    "otherInstanceDetected": "Another instance of MoMark is already running",
+    "otherInstanceDetected": "Another instance of zmarkdown is already running",
     "report": "Report",
     "startupError": "Startup error",
     "terminatedDueToError": "Terminated due to error",
@@ -1013,7 +1016,7 @@
     "defaultTitle": "Notification",
     "confirm": "View docs",
     "chromeCookieGuideTitle": "Link Chrome login state",
-    "chromeCookieGuideMessage": "To reuse your Chrome logins in the browser panel (no more re-entering passwords), grant MoMark Full Disk Access in System Settings, then restart MoMark."
+    "chromeCookieGuideMessage": "To reuse your Chrome logins in the browser panel (no more re-entering passwords), grant zmarkdown Full Disk Access in System Settings, then restart zmarkdown."
   },
   "store": {
     "editor": {
@@ -1200,7 +1203,7 @@
     }
   },
   "welcome": {
-    "windowTitle": "Welcome to MoMark",
+    "windowTitle": "Welcome to zmarkdown",
     "hi": "Welcome",
     "hiSub": "Native macOS WYSIWYG Markdown editor\nClaude Code baseline · content as interface",
     "newDocument": "New Document",
@@ -1210,5 +1213,16 @@
     "noRecentText": "No documents opened yet\nStart your first one from \"New Document\" on the left",
     "timeToday": "Today",
     "timeYesterday": "Yesterday"
+  },
+  "workspace": {
+    "words": "words",
+    "comfortable": "Reading width",
+    "wide": "Wide layout",
+    "focus": "Fullscreen reading",
+    "exitFocus": "Exit fullscreen reading",
+    "openFiles": "Open files",
+    "filterFiles": "Filter files",
+    "refreshFiles": "Refresh files",
+    "noMatches": "No matching files"
   }
 }

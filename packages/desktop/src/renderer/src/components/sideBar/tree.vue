@@ -1,9 +1,32 @@
 <template>
   <div class="side-bar-files">
-    <div v-if="dirLabel" class="sb-head">文件夹 · {{ dirLabel }}</div>
-    <div v-if="dirFiles.length" class="file-list">
+    <div
+      v-if="dirLabel"
+      class="sb-head"
+    >
+      文件夹 · {{ dirLabel }}
+    </div>
+    <div class="file-tools">
+      <input
+        v-model="filter"
+        type="search"
+        :placeholder="t('workspace.filterFiles')"
+        :aria-label="t('workspace.filterFiles')"
+      >
+      <button
+        :title="t('workspace.refreshFiles')"
+        :aria-label="t('workspace.refreshFiles')"
+        @click="loadDirFiles"
+      >
+        ↻
+      </button>
+    </div>
+    <div
+      v-if="filteredFiles.length"
+      class="file-list"
+    >
       <div
-        v-for="file of dirFiles"
+        v-for="file of filteredFiles"
         :key="file.pathname"
         class="sb-row"
         :class="{ sel: isCurrentFile(file.pathname) }"
@@ -12,20 +35,26 @@
         @mousedown.prevent
       >
         <mo-icon name="i-file" />
-        <span class="fname">{{ file.name }}</span>
-        <span v-if="isCurrentFile(file.pathname)" class="cur-group">
+        <span class="fname">{{ displayName(file.name) }}</span>
+        <span
+          v-if="isCurrentFile(file.pathname)"
+          class="cur-group"
+        >
           <span class="cur">{{ t('sideBar.tree.currentFile') }}</span>
         </span>
       </div>
     </div>
-    <div v-else class="sb-empty">
-      <span>{{ t('sideBar.tree.noFilesInDirectory') }}</span>
+    <div
+      v-else
+      class="sb-empty"
+    >
+      <span>{{ filter ? t('workspace.noMatches') : t('sideBar.tree.noFilesInDirectory') }}</span>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, watch, computed } from 'vue'
+import { ref, watch, computed, onMounted, onBeforeUnmount } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useEditorStore } from '@/store/editor'
 import MoIcon from '@/components/icons/MoIcon.vue'
@@ -41,6 +70,26 @@ interface DirFile {
 
 // 文件 tab：当前文档所在目录的 .md 文件列表（文件名排序，含当前文件本身）。
 const dirFiles = ref<DirFile[]>([])
+const filter = ref('')
+const filteredFiles = computed(() => {
+  const query = filter.value.trim().toLocaleLowerCase()
+  return query
+    ? dirFiles.value.filter((file) => file.name.toLocaleLowerCase().includes(query))
+    : dirFiles.value
+})
+const stemCounts = computed(() => {
+  const counts = new Map<string, number>()
+  for (const file of dirFiles.value) {
+    const stem = file.name.replace(/\.(md|markdown)$/i, '')
+    counts.set(stem, (counts.get(stem) ?? 0) + 1)
+  }
+  return counts
+})
+const displayName = (name: string): string => {
+  const stem = name.replace(/\.md$/i, '')
+  return (stemCounts.value.get(stem) ?? 0) > 1 ? name : stem
+}
+let generation = 0
 
 // 目录标签（原型 sb-head：「文件夹 · ~/path/」）
 const dirLabel = computed(() => {
@@ -49,6 +98,7 @@ const dirLabel = computed(() => {
 })
 
 const loadDirFiles = async (): Promise<void> => {
+  const request = ++generation
   const file = currentFile.value
   if (!file?.pathname) {
     dirFiles.value = []
@@ -57,23 +107,30 @@ const loadDirFiles = async (): Promise<void> => {
   const dir = window.path.dirname(file.pathname)
   try {
     const names = (await window.fileUtils.readdir(dir)) as string[]
+    if (request !== generation) return
     dirFiles.value = names
       .filter((name) => window.fileUtils.hasMarkdownExtension(name))
       .map((name) => ({ name, pathname: window.path.join(dir, name) }))
       .sort((a, b) => a.name.localeCompare(b.name))
   } catch {
-    dirFiles.value = []
+    if (request === generation) dirFiles.value = []
   }
 }
 
 // 切换标签/打开新文档（目录变化）时刷新列表。
 watch(
-  () => currentFile.value?.pathname,
+  [dirLabel, () => tabs.value.map((tab) => tab.pathname).join('\0')],
   () => {
     loadDirFiles().catch(() => {})
   },
   { immediate: true }
 )
+
+onMounted(() => window.addEventListener('focus', loadDirFiles))
+onBeforeUnmount(() => {
+  generation++
+  window.removeEventListener('focus', loadDirFiles)
+})
 
 const isCurrentFile = (pathname: string): boolean => {
   const file = currentFile.value
@@ -178,5 +235,37 @@ const handleFileClick = (pathname: string): void => {
   padding: 16px 8px;
   font-size: var(--f11);
   color: var(--faint);
+}
+</style>
+
+<style scoped>
+.file-tools {
+  display: flex;
+  gap: 6px;
+  padding: 4px 6px 10px;
+  flex: none;
+}
+.file-tools input {
+  min-width: 0;
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 6px 8px;
+  color: var(--ink);
+  background: var(--bg);
+  font: inherit;
+  font-size: 12px;
+}
+.file-tools button {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 18px;
+}
+.sb-row {
+  flex: none;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 32px;
 }
 </style>

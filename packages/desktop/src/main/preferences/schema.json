@@ -112,13 +112,17 @@
   "wrapCodeBlocks": {
     "description": "Editor--Wrap text inside code blocks",
     "type": "boolean",
+    "default": false
+  },
+  "showStatusBar": {
+    "type": "boolean",
     "default": true
   },
   "editorLineWidth": {
     "description": "Editor--Defines the maximum editor area width. An empty string or suffixes of ch (characters), px (pixels) or % (percentage) are allowed.",
     "type": "string",
     "pattern": "^(?:$|[0-9]+(?:ch|px|%)$)",
-    "default": ""
+    "default": "720px"
   },
   "codeFontSize": {
     "description": "Editor--Font size in code Block, the range is 12 ~ 18",

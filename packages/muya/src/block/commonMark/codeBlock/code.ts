@@ -35,6 +35,9 @@ function renderCopyButton(i18n: I18n) {
         {
             attrs: {
                 title: i18n.t('Copy content'),
+                'aria-label': i18n.t('Copy content'),
+                role: 'button',
+                tabindex: '0',
                 contenteditable: 'false',
             },
         },
@@ -119,7 +122,11 @@ class Code extends Parent {
                 return;
             }
 
-            editor.clipboard.copy(CopyType.COPY_CODE_CONTENT, codeContent.text);
+            const button = this.domNode!.firstElementChild as HTMLElement;
+            if (editor.clipboard.copy(CopyType.COPY_CODE_CONTENT, codeContent.text)) {
+                button.dataset.copied = 'true';
+                setTimeout(() => { delete button.dataset.copied; }, 1200);
+            }
         };
 
         const mousedownHandler = (event: Event) => {
@@ -128,6 +135,10 @@ class Code extends Parent {
 
         const clickObservable = fromEvent(this.domNode.firstElementChild!, 'click');
         clickObservable.subscribe(clickHandler);
+
+        fromEvent<KeyboardEvent>(this.domNode.firstElementChild!, 'keydown').subscribe((event) => {
+            if (event.key === 'Enter' || event.key === ' ') clickHandler(event);
+        });
 
         const mousedownObservable = fromEvent(this.domNode.firstElementChild!, 'mousedown');
         mousedownObservable.subscribe(mousedownHandler);

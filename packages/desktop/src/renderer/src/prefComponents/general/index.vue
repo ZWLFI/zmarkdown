@@ -57,6 +57,12 @@
           :on-change="(value) => onSelectChange('titleBarStyle', value)"
         />
         <bool
+          :description="t('preferences.general.window.showStatusBar')"
+          :notes="t('preferences.general.window.showStatusBarNotes')"
+          :bool="showStatusBar"
+          :on-change="(value) => onSelectChange('showStatusBar', value)"
+        />
+        <bool
           :description="t('preferences.general.window.hideScrollbars')"
           :bool="hideScrollbar"
           :on-change="(value) => onSelectChange('hideScrollbar', value)"
@@ -130,7 +136,10 @@
       <template #children>
         <h6>{{ t('preferences.general.startup.layoutOptions') }}</h6>
         <section>
-          <el-radio-group v-model="restoreLayoutState" class="startup-action-ctrl">
+          <el-radio-group
+            v-model="restoreLayoutState"
+            class="startup-action-ctrl"
+          >
             <el-radio :label="true">
               {{ t('preferences.general.startup.restorePreviousState') }}
             </el-radio>
@@ -141,7 +150,10 @@
         </section>
         <h6>{{ t('preferences.general.startup.startupFilesFolders') }}</h6>
         <section>
-          <el-radio-group v-model="startUpAction" class="startup-action-ctrl">
+          <el-radio-group
+            v-model="startUpAction"
+            class="startup-action-ctrl"
+          >
             <!--
               Hide "lastState" for now (#2064).
             <el-radio class="ag-underdevelop" label="lastState">Restore last editor session</el-radio>
@@ -161,7 +173,10 @@
                 {{ t('preferences.general.startup.openDefaultDirectory')
                 }}<span>: {{ defaultDirectoryToOpen }}</span>
               </el-radio>
-              <el-button size="small" @click="selectDefaultDirectoryToOpen">
+              <el-button
+                size="small"
+                @click="selectDefaultDirectoryToOpen"
+              >
                 {{ t('preferences.general.startup.selectFolder') }}
               </el-button>
             </div>
@@ -229,6 +244,7 @@ const {
   treePathExcludePatterns: projectPaths,
   zoom,
   hideScrollbar,
+  showStatusBar,
   wordWrapInToc,
   fileSortBy,
   fileSortOrder,

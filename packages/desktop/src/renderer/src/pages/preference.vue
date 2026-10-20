@@ -71,7 +71,7 @@ onMounted(() => {
   & h5,
   & h6 {
     color: var(--ink);
-    font-weight: 500;
+    font-weight: 600;
     line-height: 1.4;
   }
 
@@ -91,7 +91,7 @@ onMounted(() => {
   & .notes {
     display: block;
     margin: 8px 0 0;
-    font-style: italic;
+    font-style: normal;
     font-size: 12px;
     color: var(--muted);
   }

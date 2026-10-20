@@ -30,6 +30,12 @@
           :value="editorFontFamily"
           :on-change="(value) => onSelectChange('editorFontFamily', value)"
         />
+        <cur-select
+          :description="t('preferences.editor.textEditor.readingWidth')"
+          :value="editorLineWidth"
+          :options="readingWidthOptions()"
+          :on-change="(value) => onSelectChange('editorLineWidth', value)"
+        />
         <text-box
           :description="t('preferences.editor.textEditor.maxWidth')"
           :notes="t('preferences.editor.textEditor.maxWidthNotes')"
@@ -229,6 +235,16 @@ const {
   autoGuessEncoding,
   trimTrailingNewline
 } = storeToRefs(preferenceStore)
+
+const readingWidthOptions = () => [
+  { label: t('workspace.comfortable'), value: '720px' },
+  { label: t('workspace.wide'), value: '100%' },
+  ...(['720px', '100%'].includes(editorLineWidth.value)
+    ? []
+    : [
+        { label: editorLineWidth.value, value: editorLineWidth.value }
+      ])
+]
 
 const onSelectChange = (type: keyof PreferencesState, value: unknown): void => {
   preferenceStore.SET_SINGLE_PREFERENCE({ type, value })

@@ -21,14 +21,12 @@ import Main from './Main.vue'
 import './assets/styles/index.css'
 import './assets/styles/printService.css'
 // MoMark Claude 设计体系：令牌（唯一源）→ 字体 → 编辑器对齐（scoped 到 claude 主题）
+import '../../../../../design/tokens.css'
 import './assets/styles/tokens.css'
 import './assets/styles/fonts'
 import './assets/styles/claude-editor.css'
 // 右侧浏览器面板 + 拖拽分屏（PHASE2-SPEC §3/§5，全令牌变量，深色自动生效）
 import './assets/styles/browserPanel.css'
-
-// MoMark 设计令牌（唯一令牌源 design/tokens.css）：侧栏/胶囊 tab/高亮等新 UI 一律走令牌变量。
-import '../../../../../design/tokens.css'
 
 // -----------------------------------------------
 

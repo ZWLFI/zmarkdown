@@ -6,18 +6,18 @@
 
 :root {
   /* ── 中性色（Claude Code 实机画廊，唯一权威） ── */
-  --bg: #fcfcfb;              /* 画布：近白暖灰，绝不纯白、绝不发黄 */
+  --bg: #fdfdfc;              /* 正文画布 */
   --surface-0: #f9f9f7;       /* 面板 */
   --surface-1: #fcfcfb;       /* 抬升面 */
   --surface-2: #fff;          /* 卡片 */
-  --sidebar: #fafaf9;         /* 侧栏 */
+  --sidebar: #f4f6f8;         /* 侧栏 */
   --ink: #242422;             /* 主文字 */
   --muted: #65645f;           /* 次级文字 */
   --faint: #898781;           /* 弱化文字 */
   --line: rgba(11,11,11,.10);        /* hairline */
   --line-strong: rgba(11,11,11,.15); /* 强调描边 */
   --hover: rgba(11,11,11,.05);       /* hover 底 */
-  --selected: rgba(11,11,11,.10);    /* 选中底 */
+  --selected: rgba(61,90,128,.10);    /* 选中底 */
   --radius: 8px;              /* 圆角统一 8px 档 */
   --shadow: 0 1px 3px rgba(0,0,0,.07);
   --accent: #3d5a80;          /* 墨蓝（用户定案：颜色不参考 Claude） */
@@ -30,8 +30,8 @@
   --danger: #b53333;
 
   /* ── 字体 ── */
-  --font-display: "AnthropicSerif", Georgia, "Times New Roman", "Songti SC", "PingFang SC", serif;
-  --font-body: "Anthropic", -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", sans-serif;
+  --font-display: -apple-system, "PingFang SC", "Noto Sans CJK SC", sans-serif;
+  --font-body: -apple-system, "PingFang SC", "Noto Sans CJK SC", sans-serif;
   --font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, monospace;
 
   /* ── 圆角 ── */
@@ -61,24 +61,63 @@
   /* ── macOS 原生红绿灯（唯一 Apple 原生例外） ── */
   --tl-red: #ff5f57; --tl-yellow: #febc2e; --tl-green: #28c840;
 
-  /* ── 内容区（Claude Code 实机 .assistant 渲染：正文 15px/1.58） ── */
+  /* ── 内容区（Claude Code 实机 .assistant 渲染：正文 15px/1.7） ── */
   --c-texPri: var(--ink); --c-texSec: var(--muted); --c-texTer: var(--faint);
   --c-codeTxt: #242422; --c-codeBg: #f0efec; --c-codeblockBg: #f9f9f7;
   --c-codeblockBorder: rgba(11,11,11,.15);
   --c-hr: rgba(11,11,11,.10); --c-linkUl: rgba(61,90,128,.40); --c-bg: var(--bg);
-  --c-tableBorder: rgba(11,11,11,.10); --c-tableHeadBg: #efefed; --c-tableCellBg: #efefed;
+  --c-tableBorder: rgba(11,11,11,.10); --c-tableHeadBg: #efefed; --c-tableCellBg: #f8f9fa;
   --c-checkBorder: #898781;
   --c-quoteBar: #c9c7c0;
 
   /* ── 尺寸 ── */
-  --f13: 17.33px; --f12: 16px; --f11: 14.67px;
+  --f13: 14px; --f12: 13px; --f11: 12px;
   --sidebar-w: 288px;
   --editor-col-w: 720px;
   --editor-body-size: 15px;
-  --editor-body-lh: 1.58;
+  --editor-body-lh: 1.7;
 
   /* 网址 Dock 标签底（浅灰底，选中白底+墨蓝边） */
   --ud-bg: #f0efec;
+
+  /* Shared typography and motion: defined here only. */
+
+  --ease-tab-width: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-tab-enter: cubic-bezier(0.4, 0, 0.2, 1);
+  --dur-tab-indicator: 300ms;
+  --ease-doc-out: cubic-bezier(0.4, 0, 1, 1);
+  --ease-doc-in: cubic-bezier(0.4, 0, 0.2, 1);
+  --dur-doc-out: 200ms;
+  --dur-doc-in: 280ms;
+  --ease-panel: cubic-bezier(.22,1,.36,1);
+  --ease-modes-grow: cubic-bezier(.18,1.42,.36,1);
+  --ease-modes-tab: cubic-bezier(.18,1.35,.36,1);
+  --ease-drop-zone: cubic-bezier(.18,1.22,.36,1);
+  --ease-dock: cubic-bezier(.18,1.32,.36,1);
+  --editor-pad: 20px 32px 140px;
+  --editor-pad-top: 20px;
+  --editor-pad-x: 32px;
+  --h1-size: 30px;
+  --h1-weight: 650;
+  --h1-font: var(--font-display);
+  --h2-size: 22px;
+  --h2-weight: 680;
+  --h3-size: 18px;
+  --h3-weight: 670;
+  --h4-size: 16px;
+  --h4-weight: 660;
+  --h5-size: 15px;
+  --h5-weight: 655;
+  --h6-size: 14px;
+  --h6-weight: 650;
+  --heading-font: var(--font-body);
+  --inline-code-size: 13px;
+  --inline-code-pad: 2px 4px;
+  --inline-code-radius: 4px;
+  --code-block-radius: 10px;
+  --code-block-border: 1px;
+  --caret-color: var(--accent);
+  --placeholder-color: var(--faint);
 
   /* HUD toast */
   --hudbg: #2e2d2a;
@@ -88,7 +127,7 @@
 [data-theme="dark"] {
   --bg: #151515; --surface-0: #111111; --surface-1: #1a1a19; --surface-2: #262624;
   --sidebar: #111111;
-  --ink: #fcfcfb; --muted: #c4c3b2; --faint: #96948a;
+  --ink: #fcfcfb; --muted: #b9bec6; --faint: #929aa5;
   --line: rgba(255,255,255,.08); --line-strong: rgba(255,255,255,.16);
   --hover: rgba(255,255,255,.06); --selected: rgba(61,90,128,.4);
   --accent: #7fa6cc; --accent-on: #12161b;
@@ -99,11 +138,11 @@
   --shadow-pop: 0 0 0 1px rgba(255,255,255,.08), 0 2px 10px rgba(0,0,0,.45);
   --shadow-win: 0 0 0 1px rgba(255,255,255,.10), 0 6px 24px rgba(0,0,0,.50);
   --backdrop: rgba(0,0,0,.55);
-  --c-codeTxt: #e8e6dc; --c-codeBg: rgba(255,255,255,.08); --c-codeblockBg: #1a1a19;
+  --c-codeTxt: #e2e6ec; --c-codeBg: rgba(255,255,255,.08); --c-codeblockBg: #1a1a19;
   --c-codeblockBorder: rgba(255,255,255,.12);
   --c-hr: rgba(255,255,255,.10); --c-linkUl: rgba(127,166,204,.45);
   --c-tableBorder: rgba(255,255,255,.14); --c-tableHeadBg: rgba(255,255,255,.06);
-  --c-tableCellBg: rgba(255,255,255,.06);
+  --c-tableCellBg: rgba(255,255,255,.025);
   --c-checkBorder: rgba(255,255,255,.70);
   --c-quoteBar: rgba(255,255,255,.20);
   --ud-bg: #262624;

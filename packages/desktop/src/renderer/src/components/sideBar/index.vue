@@ -10,8 +10,15 @@
     <div class="sb-inner">
       <!-- 顶部「大纲 / 文件」双 tab：白色滑块在选中项间滑动（回弹缓动，非线性），
            按钮自身不再换底，仅滑块位移 + 文字颜色过渡。 -->
-      <div class="sb-tabs" role="tablist">
-        <span class="sb-slider" :class="{ right: activeTab === 'files' }" aria-hidden="true" />
+      <div
+        class="sb-tabs"
+        role="tablist"
+      >
+        <span
+          class="sb-slider"
+          :class="{ right: activeTab === 'files' }"
+          aria-hidden="true"
+        />
         <button
           role="tab"
           :aria-selected="activeTab === 'outline'"
@@ -31,12 +38,18 @@
       </div>
 
       <!-- 大纲 tab -->
-      <div v-show="activeTab === 'outline'" class="sb-sec">
+      <div
+        v-show="activeTab === 'outline'"
+        class="sb-sec"
+      >
         <toc />
       </div>
 
       <!-- 文件 tab -->
-      <div v-show="activeTab === 'files'" class="sb-sec">
+      <div
+        v-show="activeTab === 'files'"
+        class="sb-sec"
+      >
         <tree />
       </div>
     </div>
@@ -151,14 +164,14 @@ const selectTab = (tab: SideBarTab): void => {
   min-width: 0;
   min-height: 0;
   box-sizing: border-box;
-  margin: 10px 0 10px 10px;
-  background: var(--surface-2);
+  margin: 0;
+  background: var(--sidebar);
   /* round11（用户纠偏）：底板外壳对齐参考 gallery .dock-panel——
      白底 + .5px 13% 黑描边 + 13px 圆角 + 2px 8px 8% 投影，描边此前
      被「去边框」拍板误删，补回。 */
   border: 0.5px solid rgba(11, 11, 11, 0.13);
-  border-radius: 13px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border-radius: 0;
+  box-shadow: none;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -169,7 +182,7 @@ const selectTab = (tab: SideBarTab): void => {
      + 黑投影浮起层次（克制强度，避免上版「亮灰浮层」突兀感）。 */
   background: var(--surface-1);
   border: 0.5px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
+  box-shadow: none;
 }
 
 .sb-tabs {

@@ -19,7 +19,7 @@ import type { IUpdateCheckResult, IUpdateInfo } from '@shared/types/ipc'
  * 拦截），与本项目「用户手动 xattr -cr」的既有说明一致。
  */
 
-const RELEASE_REPO = 'lixiaoshuang79/momark'
+const RELEASE_REPO = 'ZWLFI/zmarkdown'
 const LATEST_API = `https://api.github.com/repos/${RELEASE_REPO}/releases/latest`
 
 /** 下载进度的回调载荷（进程内部用，跨进程的形状见 `IUpdateProgress`）。 */
@@ -57,7 +57,7 @@ export const checkForUpdates = async (): Promise<IUpdateCheckResult> => {
 
   try {
     const res = await net.fetch(LATEST_API, {
-      headers: { Accept: 'application/vnd.github+json', 'User-Agent': 'MoMark-Updater' }
+      headers: { Accept: 'application/vnd.github+json', 'User-Agent': 'zmarkdown-Updater' }
     })
 
     if (!res.ok) {
@@ -119,7 +119,7 @@ export const downloadUpdate = async (
   await fs.promises.mkdir(dir, { recursive: true })
   const target = path.join(dir, info.assetName)
 
-  const res = await net.fetch(info.assetUrl, { headers: { 'User-Agent': 'MoMark-Updater' } })
+  const res = await net.fetch(info.assetUrl, { headers: { 'User-Agent': 'zmarkdown-Updater' } })
 
   if (!res.ok || !res.body) throw new Error(`下载失败：HTTP ${res.status}`)
 
@@ -182,7 +182,7 @@ export const installUpdate = async (extractedAppPath: string): Promise<void> => 
   // 当前运行的 app bundle（…/墨记.app）；开发态（electron-vite dev）没有这个
   // 层级，installUpdate 只对打包产物有意义。
   const appBundle = app.getPath('exe').replace(/\/Contents\/MacOS\/[^/]+$/, '')
-  const targetApp = appBundle.endsWith('.app') ? appBundle : '/Applications/墨记.app'
+  const targetApp = appBundle.endsWith('.app') ? appBundle : '/Applications/zmarkdown.app'
 
   const script = [
     'set -e',

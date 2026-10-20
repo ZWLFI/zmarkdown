@@ -126,6 +126,12 @@ class EditorWindow extends BaseWindow {
     const resolvedTabBarVisibility = tabBarVisibility === undefined ? true : !!tabBarVisibility
 
     // Enable native or custom/frameless window and titlebar
+    if (isOsx) {
+      // Keep real macOS window controls in the tab row; no separate title row.
+      winOptions.frame = true
+      winOptions.titleBarStyle = 'hidden'
+      winOptions.trafficLightPosition = { x: 12, y: 13 }
+    }
     if (!isOsx) {
       winOptions.titleBarStyle = 'default'
       if (titleBarStyle === 'native') {
@@ -208,7 +214,7 @@ class EditorWindow extends BaseWindow {
       )
     })
 
-    win.webContents.once('render-process-gone', async (_event, { reason }) => {
+    win.webContents.once('render-process-gone', async(_event, { reason }) => {
       if (reason === 'clean-exit') {
         return
       }
@@ -223,7 +229,7 @@ class EditorWindow extends BaseWindow {
       const { response } = await dialog.showMessageBox(win!, {
         type: 'warning',
         buttons: ['Close', 'Reload', 'Keep It Open'],
-        message: 'MoMark has crashed',
+        message: 'zmarkdown has crashed',
         detail: msg
       })
 

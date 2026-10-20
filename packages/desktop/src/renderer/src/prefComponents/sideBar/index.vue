@@ -1,16 +1,22 @@
 <template>
-  <div class="pref-tabs">
-    <div
+  <div
+    class="pref-tabs"
+    role="tablist"
+    aria-label="Settings"
+  >
+    <button
       v-for="c of getCategory()"
       :key="c.label"
+      type="button"
       class="pref-tab"
       :class="{ on: c.label === currentCategory }"
       role="tab"
       :aria-selected="c.label === currentCategory"
       @click="handleCategoryItemClick(c)"
+      @keydown="handleTabKey($event, c)"
     >
       <span>{{ c.name }}</span>
-    </div>
+    </button>
   </div>
 </template>
 <script setup lang="ts">
@@ -44,6 +50,21 @@ const handleCategoryItemClick = (item: CategoryItem): void => {
       path: item.path
     })
   }
+}
+
+const handleTabKey = (event: KeyboardEvent, item: CategoryItem): void => {
+  const categories = getCategory()
+  const index = categories.findIndex(c => c.label === item.label)
+  const next = event.key === 'ArrowRight'
+    ? (index + 1) % categories.length
+    : event.key === 'ArrowLeft'
+      ? (index + categories.length - 1) % categories.length
+      : event.key === 'Home' ? 0 : event.key === 'End' ? categories.length - 1 : -1
+  if (next < 0) return
+  event.preventDefault()
+  const target = (event.currentTarget as HTMLElement).parentElement?.children[next] as HTMLElement
+  target?.focus()
+  handleCategoryItemClick(categories[next])
 }
 
 const onIpcCategoryChange = (_event: unknown, category: unknown): void => {

@@ -165,7 +165,7 @@ ${title}.
 
 ### Version
 
-墨记: ${MARKTEXT_VERSION_STRING}
+zmarkdown: ${MARKTEXT_VERSION_STRING}
 Operating system: ${getOSInformation()}`
           )
           break

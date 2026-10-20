@@ -2,10 +2,13 @@
   <div
     ref="wrapperRef"
     class="editor-wrapper"
-    :class="[{ typewriter: typewriter, focus: focus, source: sourceCode }]"
+    :class="[{ typewriter: typewriter, source: sourceCode }]"
     :dir="textDirection"
   >
-    <div ref="editorRef" class="editor-component" />
+    <div
+      ref="editorRef"
+      class="editor-component"
+    />
     <HtmlPasteChooser
       ref="htmlChooserRef"
       :visible="htmlPasteChooser.visible"
@@ -15,10 +18,18 @@
       @choose="onHtmlPasteChoose"
       @close="closeHtmlPasteChooser"
     />
-    <div v-show="imageViewerVisible" class="image-viewer">
-      <span class="icon-close" @click="setImageViewerVisible(false)">
+    <div
+      v-show="imageViewerVisible"
+      class="image-viewer"
+    >
+      <button
+        type="button"
+        class="icon-close"
+        :aria-label="t('dialog.close')"
+        @click="setImageViewerVisible(false)"
+      >
         <CloseIcon />
-      </span>
+      </button>
       <div ref="imageViewerRef" />
     </div>
     <el-dialog
@@ -35,7 +46,10 @@
           {{ t('editor.insertTable.title') }}
         </div>
       </template>
-      <el-form :model="tableChecker" :inline="true">
+      <el-form
+        :model="tableChecker"
+        :inline="true"
+      >
         <el-form-item :label="t('editor.insertTable.rows')">
           <el-input-number
             ref="rowInput"
@@ -61,7 +75,10 @@
           <el-button @click="dialogTableVisible = false">
             {{ t('common.cancel') }}
           </el-button>
-          <el-button type="primary" @click="handleDialogTableConfirm">
+          <el-button
+            type="primary"
+            @click="handleDialogTableConfirm"
+          >
             {{ t('common.ok') }}
           </el-button>
         </div>
@@ -262,7 +279,6 @@ const {
 
   // Edit modes
   typewriter,
-  focus,
   sourceCode
 } = storeToRefs(preferencesStore)
 
@@ -660,7 +676,7 @@ const restoreScrollAnchor = (container: HTMLElement, anchor: IScrollAnchor): boo
 }
 
 /** 异步版精确窗口：整个 Promise 期间保持精确布局（导出采集帧尺寸要用）。 */
-async function withExactLayoutAsync<T>(run: () => Promise<T>): Promise<T> {
+async function withExactLayoutAsync<T> (run: () => Promise<T>): Promise<T> {
   const el = wrapperRef.value
   if (!el || !el.classList.contains('cv-offscreen')) return run()
   el.classList.remove('cv-offscreen')
@@ -829,7 +845,7 @@ class SimpleImageViewer {
   _onMousemove!: (e: MouseEvent) => void
   _onMouseup!: () => void
 
-  constructor(container: HTMLElement, { url }: { url: string }) {
+  constructor (container: HTMLElement, { url }: { url: string }) {
     this.container = container
     this.scale = 1
     this.translateX = 0
@@ -840,7 +856,7 @@ class SimpleImageViewer {
     this._init(url)
   }
 
-  _init(url: string) {
+  _init (url: string) {
     this.container.innerHTML = ''
     this.img = document.createElement('img')
     this.img.src = url
@@ -851,11 +867,11 @@ class SimpleImageViewer {
     this._bindEvents()
   }
 
-  _updateTransform() {
+  _updateTransform () {
     this.img.style.transform = `translate(${this.translateX}px,${this.translateY}px) scale(${this.scale})`
   }
 
-  _bindEvents() {
+  _bindEvents () {
     this._onWheel = (e: WheelEvent) => {
       e.preventDefault()
       const factor = e.deltaY < 0 ? 1.1 : 0.9
@@ -886,7 +902,7 @@ class SimpleImageViewer {
     document.addEventListener('mouseup', this._onMouseup)
   }
 
-  destroy() {
+  destroy () {
     this.container.removeEventListener('wheel', this._onWheel)
     this.container.removeEventListener('mousedown', this._onMousedown)
     document.removeEventListener('mousemove', this._onMousemove)
@@ -971,12 +987,6 @@ const onTabEnterMotion = (e: Event): void => {
 }
 onMounted(() => document.addEventListener('momark:tab-enter', onTabEnterMotion))
 onBeforeUnmount(() => document.removeEventListener('momark:tab-enter', onTabEnterMotion))
-
-watch(focus, (value) => {
-  if (editor.value) {
-    editor.value.setFocusMode(value)
-  }
-})
 
 // In source-code mode the Paragraph and Format menus operate on the hidden
 // WYSIWYG engine, so grey them out. On return to WYSIWYG, re-apply the menu
@@ -2368,7 +2378,8 @@ onMounted(() => {
   }
 
   const options: Record<string, unknown> = {
-    focusMode: focus.value,
+    // Fullscreen reading only changes the surrounding layout; never dim document blocks.
+    focusMode: false,
     markdown: props.markdown,
     locale: getMuyaLocale(language.value),
     preferLooseListItem: preferLooseListItem.value,
@@ -2861,14 +2872,18 @@ onBeforeUnmount(() => {
 
 .image-viewer {
   position: fixed;
-  backdrop-filter: blur(5px);
+  /* A flat canvas avoids compositing artifacts while zooming local images. */
   top: 0;
   right: 0;
   left: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.8);
+  background: var(--bg);
   z-index: 11;
   & .icon-close {
+    border: none;
+    padding: 0;
+    background: transparent;
+    cursor: pointer;
     z-index: 1000;
     width: 30px;
     height: 30px;
@@ -2876,7 +2891,7 @@ onBeforeUnmount(() => {
     top: 50px;
     left: 50px;
     display: block;
-    color: #efefef;
+    color: var(--ink);
     & svg {
       width: 100%;
       height: 100%;

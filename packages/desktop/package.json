@@ -1,7 +1,7 @@
 {
-  "name": "marktext",
-  "version": "1.5.10",
-  "description": "MarkText",
+  "name": "zmarkdown",
+  "version": "1.6.0",
+  "description": "zmarkdown — Markdown editor maintained by ZWLFI, derived from MoMark and MarkText",
   "license": "AGPL-3.0-only",
   "main": "./out/main/index.js",
   "author": {
@@ -24,12 +24,16 @@
       "name": "Tkaixiang",
       "email": "tkaixiang@gmail.com",
       "url": "https://github.com/Tkaixiang"
+    },
+    {
+      "name": "ZWLFI (derivative maintainer)",
+      "url": "https://github.com/ZWLFI"
     }
   ],
-  "homepage": "https://github.com/marktext/marktext",
+  "homepage": "https://github.com/ZWLFI/zmarkdown",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/marktext/marktext.git"
+    "url": "git+https://github.com/ZWLFI/zmarkdown.git"
   },
   "scripts": {
     "minify-locales": "tsx ../../scripts/minify-locales.ts",

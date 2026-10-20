@@ -1,3 +1,4 @@
+import { closeTestApp } from './helpers'
 import { expect, test } from '@playwright/test'
 import type { ElectronApplication, Page } from 'playwright'
 import {
@@ -64,7 +65,7 @@ test.describe('HTML block typing shortcut and single-image lowering', () => {
   })
 
   test.afterAll(async() => {
-    if (app) await app.close()
+    if (app) await closeTestApp(app)
   })
 
   test('typing "<div>" then Enter opens an html-block with caret between the tags', async() => {

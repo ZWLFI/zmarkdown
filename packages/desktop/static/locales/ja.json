@@ -95,14 +95,14 @@
       "about": "バージョン情報"
     },
     "marktext": {
-      "title": "MoMark",
-      "about": "MoMark について",
+      "title": "zmarkdown",
+      "about": "zmarkdown について",
       "preferences": "環境設定",
       "services": "サービス",
-      "hide": "MoMark を隠す",
+      "hide": "zmarkdown を隠す",
       "hideOthers": "他を隠す",
       "showAll": "すべて表示",
-      "quit": "MoMark を終了"
+      "quit": "zmarkdown を終了"
     },
     "view": {
       "view": "表示",
@@ -343,7 +343,7 @@
   },
   "import": {
     "title": "インポートまたは開く",
-    "description": "ここにドラッグして MoMark にコンテンツをインポート"
+    "description": "ここにドラッグして zmarkdown にコンテンツをインポート"
   },
   "preferences": {
     "title": "環境設定",
@@ -372,10 +372,10 @@
         "hideScrollbar": "スクロールバーを非表示にするかどうか",
         "wordWrapInToc": "目次で自動改行を有効にするかどうか",
         "fileSortBy": "開いたフォルダー内のファイルを作成時刻、変更時刻、タイトルで並べ替え",
-        "startUpAction": "MoMark 起動後のアクション、最後に編集したコンテンツを開く、指定されたフォルダーを開く、または空白ページ",
+        "startUpAction": "zmarkdown 起動後のアクション、最後に編集したコンテンツを開く、指定されたフォルダーを開く、または空白ページ",
         "restoreLayoutState": "起動時に前回のエディター状態を復元",
         "defaultDirectoryToOpen": "startUp=folder の場合に起動時に開かれるデフォルトディレクトリ",
-        "language": "MoMark が使用する言語",
+        "language": "zmarkdown が使用する言語",
         "editorFontFamily": "エディターのフォントファミリー",
         "fontSize": "フォントサイズ (ピクセル)",
         "lineHeight": "行の高さ",
@@ -399,7 +399,7 @@
         "preferLooseListItem": "優先されるリストタイプ",
         "bulletListMarker": "箇条書きリストで使用されるマーカー",
         "orderListDelimiter": "順序付きリストで使用される区切り文字",
-        "preferHeadingStyle": "MoMark で優先される見出しスタイル",
+        "preferHeadingStyle": "zmarkdown で優先される見出しスタイル",
         "tabSize": "タブを x個 のスペースに置き換える",
         "listIndentation": "リストのインデントを選択",
         "frontmatterType": "フロントマターのタイプ",
@@ -409,7 +409,7 @@
         "isGitlabCompatibilityEnabled": "GitLab 互換モードを有効にする",
         "sequenceTheme": "シーケンス図のテーマ",
         "plantumlServer": "PlantUML サーバーの URL",
-        "theme": "MoMark で使用するテーマの選択",
+        "theme": "zmarkdown で使用するテーマの選択",
         "followSystemTheme": "システムのテーマに従う",
         "lightModeTheme": "システムがライトモードの時に使用するテーマ",
         "darkModeTheme": "システムがダークモードの時に使用するテーマ",
@@ -617,7 +617,7 @@
         "neverDetected": "検出されたことがない",
         "neverSuccessful": "成功したことがない"
       },
-      "defaultBehavior": "MoMark に画像を貼り付けまたはドラッグした後のデフォルト動作"
+      "defaultBehavior": "zmarkdown に画像を貼り付けまたはドラッグした後のデフォルト動作"
     },
     "markdown": {
       "title": "Markdown",
@@ -734,7 +734,7 @@
   },
   "commands": {
     "mt": {
-      "hide": "MoMark を隠す",
+      "hide": "zmarkdown を隠す",
       "hideOthers": "他を隠す"
     },
     "file": {
@@ -895,7 +895,7 @@
     "configSchemaViolation": "設定スキーマ違反",
     "copyError": "コピーエラー",
     "initializationFailed": "初期化に失敗しました {hint}",
-    "otherInstanceDetected": "MoMarkの別のインスタンスが既に実行中です",
+    "otherInstanceDetected": "zmarkdownの別のインスタンスが既に実行中です",
     "report": "報告",
     "startupError": "起動エラー",
     "terminatedDueToError": "エラーにより終了",
