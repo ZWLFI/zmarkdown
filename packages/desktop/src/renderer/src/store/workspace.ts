@@ -1,7 +1,8 @@
-import { computed } from 'vue'
+import { computed, ref, onScopeDispose } from 'vue'
 import { defineStore } from 'pinia'
 import { useEditorStore } from './editor'
 import { useSplitStore } from './split'
+import { useLayoutStore } from './layout'
 import { useBrowserPanelStore } from './browserPanel'
 
 /**
@@ -32,15 +33,20 @@ export const useWorkspaceStore = defineStore('workspace', () => {
   })
 
   const splitDocTab = computed(() => {
-    if (splitStore.kind !== 'doc' || !splitStore.tabId) return null
+    if (!splitStore.tabId) return null
     return editorStore.tabs.find((t) => t.id === splitStore.tabId) ?? null
   })
 
-  // 面板宽度：分屏激活用 split.width（240~60%）；网页模式用 bp.urlWidth
-  // （分隔线可拖动，默认 288px）。拖拽中由分隔线实时写入。
-  const panelWidthPx = computed<number>(() => {
-    if (splitStore.active) return splitStore.width
-    return bpStore.urlWidth
+  const layout = useLayoutStore()
+  const viewportWidth = ref(window.innerWidth)
+  const resize = () => { viewportWidth.value = window.innerWidth }
+  window.addEventListener('resize', resize)
+  onScopeDispose(() => window.removeEventListener('resize', resize))
+  // Keep the preferred width across modes and window resizing; constrain only its presentation.
+  const panelWidthPx = computed(() => {
+    const available = Math.max(0, viewportWidth.value - layout.effectiveSideBarWidth)
+    const maximum = available >= 480 ? available - 240 : available / 2
+    return Math.round(Math.min(bpStore.urlWidth, maximum))
   })
 
   return {

@@ -79,34 +79,13 @@
 
     <button
       class="tb-toggle panel-toggle"
-      :class="{ rolled: bpanelOpen }"
+      v-if="!bpanelOpen"
       :title="t('sideBar.rightPanelTitle')"
       @click.stop="toggleBpPanel"
     >
       <mo-icon :name="bpanelOpen ? 'i-x' : 'i-partition'" />
     </button>
-    <select
-      class="open-files"
-      :aria-label="t('workspace.openFiles')"
-      :title="t('workspace.openFiles')"
-      :value="''"
-      @change="selectOpenFile"
-    >
-      <option
-        value=""
-        disabled
-      >
-        {{ t('workspace.openFiles') }} ({{ tabs.length }})
-      </option>
-      <option
-        v-for="file in tabs"
-        :key="file.id"
-        :value="file.id"
-      >
-        {{ file.isSaved ? '' : '● ' }}{{ file.pathname || file.filename }}
-      </option>
-    </select>
-    <bp-modes :shown="bpanelOpen" />
+
   </div>
 </template>
 
@@ -125,7 +104,6 @@ import type { IFileState } from '@shared/types/files'
 import { useBrowserPanelStore } from '@/store/browserPanel'
 import { useSplitStore } from '@/store/split'
 import { useWorkspaceStore } from '@/store/workspace'
-import BpModes from '@/components/browserPanel/bpModes.vue'
 // 正文整屏滑出/滑入动效的全局样式（类名挂在兄弟组件的根节点上，
 // scoped 样式无法命中，必须全局注入）。
 import './transitions.css'
@@ -220,12 +198,6 @@ const selectFile = (file: IFileState) => {
   // 起跳信号：editor.vue 监听此事件，同步起跳后再落地切换。
   document.dispatchEvent(new CustomEvent('momark:tab-enter', { detail: { direction } }))
   editorStore.UPDATE_CURRENT_FILE(file)
-}
-
-const selectOpenFile = (event: Event) => {
-  const file = tabs.value.find((file) => file.id === (event.target as HTMLSelectElement).value)
-  if (file) selectFile(file)
-  ;(event.target as HTMLSelectElement).value = ''
 }
 
 const removeFileInTab = (file: IFileState) => {

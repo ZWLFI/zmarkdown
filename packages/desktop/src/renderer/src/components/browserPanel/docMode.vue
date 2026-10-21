@@ -4,6 +4,14 @@
        编辑器实例（docEditorPane）；无分屏 = 最近打开列表（点击直接建标签
        进分屏编辑）+ 底部「打开文件…」条。 -->
   <div class="bp-doc">
+    <div class="bp-doc-toolbar">
+      <select class="open-files" aria-label="打开的文件" :value="splitDocTab?.id || ''" @change="selectDocument">
+        <option value="" disabled>选择文档</option>
+        <option v-for="file in editorStore.tabs" :key="file.id" :value="file.id" :title="file.pathname || file.filename">{{ file.isSaved ? '' : '● ' }}{{ file.filename }}</option>
+      </select>
+      <button type="button" title="打开文件" @click="openFile">打开</button>
+      <button type="button" title="新建文件" @click="newFile">新建</button>
+    </div>
     <!-- round11（用户拍板）：右栏不再有任何顶部占位/头条——文档内容开始线
          与左主编辑器对齐由 .bp-inner margin-top 0 + .bp-doc padding-top 0
          保证（两侧 mu-container 同 top）。 -->
@@ -70,6 +78,14 @@ import type { FileEncoding, LineEnding } from '@shared/types/files'
  * 分屏（keepCurrent：左栏编辑当前文档、右栏编辑分屏文档）。
  */
 
+const editorStore = useEditorStore()
+const splitStore = useSplitStore()
+const selectDocument = (event: Event) => {
+  const id = (event.target as HTMLSelectElement).value
+  if (id === splitDocTab.value?.id) return
+  bpStore.CLOSE_HTML_DOC()
+  splitStore.DRAG_TO_SPLIT(id, { allowSame: true, keepCurrent: true })
+}
 const workspaceStore = useWorkspaceStore()
 const bpStore = useBrowserPanelStore()
 const { splitDocTab } = storeToRefs(workspaceStore)

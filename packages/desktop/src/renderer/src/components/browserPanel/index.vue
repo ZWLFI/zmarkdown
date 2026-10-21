@@ -12,6 +12,7 @@
     @drop="onDrop"
   >
     <div class="bp-inner">
+      <nav-bar v-show="activeTab === 'url'" />
       <div class="bp-body">
         <!-- 顶部 2px 墨蓝进度线（任何激活页加载中即显示，滑动动画） -->
         <div class="bp-track" :class="{ show: activePageLoading }" />
@@ -19,24 +20,10 @@
         <!-- 三种内容常驻挂载（v-show）：切换网页/文档/标注、收起再展开面板
              都不影响里面的内容与状态（网页滚动/登录态、预览文档保持）。 -->
         <url-mode v-show="activeTab === 'url'" />
-        <doc-mode v-show="activeTab === 'doc'" ref="docModeRef" />
+        <doc-mode v-show="activeTab === 'doc'" />
         <annotation-mode v-show="activeTab === 'annotation'" />
       </div>
 
-      <!-- 底部条按 tab 各归其位：网址 = 40px 导航条；文档 = 「打开文件… /
-           新建文件」（36px 顶部 hairline，两按钮左右等分）；标注 = 面板自带
-           底条（annotationMode.vue 内），所以这里两套都收起。 -->
-      <nav-bar v-show="activeTab === 'url'" />
-      <div v-show="activeTab === 'doc'" class="bp-doc-actions">
-        <button class="bp-openfile" @click="openDocFile">
-          <mo-icon name="i-folder" />
-          打开文件…
-        </button>
-        <button class="bp-openfile" @click="newDocFile">
-          <mo-icon name="i-file" />
-          新建文件
-        </button>
-      </div>
     </div>
 
     <!-- 常用语设置弹窗（本窗口模态，teleport 到 body；由标注 store 的
@@ -48,7 +35,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onBeforeUnmount, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
-import MoIcon from '@/components/icons/MoIcon.vue'
 import { useBrowserPanelStore } from '@/store/browserPanel'
 import { usePreferencesStore } from '@/store/preferences'
 import { useSplitStore } from '@/store/split'
@@ -84,7 +70,6 @@ watch(
   }
 )
 
-const docModeRef = ref<InstanceType<typeof DocMode> | null>(null)
 
 const panelStyle = computed(() => ({
   width: bpanelOpen.value ? `${panelWidthPx.value}px` : '0px',
@@ -121,14 +106,6 @@ const onDrop = (event: DragEvent) => {
   // 投放区/右侧面板本身已呈现该文件，用户可自行看见。
   splitStore.DRAG_TO_SPLIT(id)
   splitStore.dragTabId = null
-}
-
-const openDocFile = () => {
-  docModeRef.value?.openFile()
-}
-
-const newDocFile = () => {
-  docModeRef.value?.newFile()
 }
 
 // ══ 飞点（原型动效 #22/#23，feat/quick-phrases）══

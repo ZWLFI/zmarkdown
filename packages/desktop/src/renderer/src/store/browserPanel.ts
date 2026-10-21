@@ -67,7 +67,8 @@ export const useBrowserPanelStore = defineStore('browserPanel', () => {
   const dragState = ref<BpDragState>('none')
   // 网页模式面板宽度（分隔线可拖动，240px ≤ w ≤ 60% 窗宽；会话内保持，
   // 不落盘，重启回 288px 默认）。文档分屏的宽度归 split.width 管。
-  const urlWidth = ref(288)
+  const savedWidth = Number(localStorage.getItem('right-panel-width'))
+  const urlWidth = ref(Number.isFinite(savedWidth) && savedWidth >= 240 ? savedWidth : 360)
 
   // ── 内容标注 tab（feat/annotations）──────────────────────────────
   // 第三 tab 是叠加态：打开时压住 url/doc 两个模式（内容都保活），关闭后
@@ -83,10 +84,9 @@ export const useBrowserPanelStore = defineStore('browserPanel', () => {
   let unlistenInputContext: (() => void) | null = null
 
   function SET_URL_WIDTH(value: number): void {
-    const win = window.innerWidth
-    const min = 240
-    const max = Math.max(min, win * 0.6)
-    urlWidth.value = Math.round(Math.max(min, Math.min(max, value)))
+    if (!Number.isFinite(value)) return
+    urlWidth.value = Math.round(Math.max(240, Math.min(window.innerWidth - 240, value)))
+    localStorage.setItem('right-panel-width', String(urlWidth.value))
   }
 
   function SET_OPEN(value: boolean): void {

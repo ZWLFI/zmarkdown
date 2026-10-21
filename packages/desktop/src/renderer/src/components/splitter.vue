@@ -3,6 +3,12 @@
     ref="splitterEl"
     class="splitter"
     title="左右拖动，调整两栏宽度"
+    role="separator"
+    aria-label="右侧栏宽度"
+    aria-orientation="vertical"
+    tabindex="0"
+    @keydown.left.prevent="bpStore.SET_URL_WIDTH(bpStore.urlWidth + 16)"
+    @keydown.right.prevent="bpStore.SET_URL_WIDTH(bpStore.urlWidth - 16)"
     @pointerdown="onPointerDown"
   />
 </template>
@@ -30,11 +36,7 @@ const panelWidthFrom = (clientX: number) => {
   if (!winBody) return
   const rect = winBody.getBoundingClientRect()
   const w = rect.right - clientX
-  if (splitStore.active) {
-    splitStore.SET_SPLIT_WIDTH(w) // 内部处理 240/60% 夹逼与 ≥90% 自动关闭
-  } else {
-    bpStore.SET_URL_WIDTH(w)
-  }
+  bpStore.SET_URL_WIDTH(w)
 }
 
 const onPointerDown = (event: PointerEvent) => {

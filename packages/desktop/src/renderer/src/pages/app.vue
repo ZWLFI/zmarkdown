@@ -25,6 +25,7 @@
         class="editor-chrome"
       >
         <editor-tabs />
+        <right-panel-header />
       </div>
 
       <!-- 主体三栏：侧栏 / 编辑区列 / 分隔线 / 右侧浏览器面板
@@ -110,6 +111,7 @@ import { addStyles, addThemeStyle, addCustomStyle, type AddStylesOptions } from 
 import Recent from '@/components/recent/index.vue'
 import EditorWithTabs from '@/components/editorWithTabs/index.vue'
 import EditorTabs from '@/components/editorWithTabs/tabs.vue'
+import RightPanelHeader from '@/components/browserPanel/panelHeader.vue'
 import TitleBar from '@/components/titleBar/index.vue'
 import SideBar from '@/components/sideBar/index.vue'
 import CommandPalette from '@/components/commandPalette/index.vue'
@@ -456,7 +458,7 @@ onMounted(async () => {
 .editor-chrome {
   flex: none;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
 }
 /* 主体三栏行：编辑区列 / 分隔线 / 右栏 */
 .editor-main-col {
