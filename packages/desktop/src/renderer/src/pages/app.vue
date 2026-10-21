@@ -24,6 +24,7 @@
         v-if="init"
         class="editor-chrome"
       >
+        <left-panel-header />
         <editor-tabs />
         <right-panel-header />
       </div>
@@ -111,6 +112,7 @@ import { addStyles, addThemeStyle, addCustomStyle, type AddStylesOptions } from 
 import Recent from '@/components/recent/index.vue'
 import EditorWithTabs from '@/components/editorWithTabs/index.vue'
 import EditorTabs from '@/components/editorWithTabs/tabs.vue'
+import LeftPanelHeader from '@/components/sideBar/panelHeader.vue'
 import RightPanelHeader from '@/components/browserPanel/panelHeader.vue'
 import TitleBar from '@/components/titleBar/index.vue'
 import SideBar from '@/components/sideBar/index.vue'

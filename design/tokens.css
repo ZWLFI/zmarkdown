@@ -10,6 +10,8 @@
   --surface-0: #f9f9f7;       /* 面板 */
   --surface-1: #fcfcfb;       /* 抬升面 */
   --surface-2: #fff;          /* 卡片 */
+  --panel-bg: #f8f9fa;
+  --panel-line: #e5e7eb;
   --sidebar: #f4f6f8;         /* 侧栏 */
   --ink: #242422;             /* 主文字 */
   --muted: #65645f;           /* 次级文字 */
@@ -126,6 +128,8 @@
 
 [data-theme="dark"] {
   --bg: #151515; --surface-0: #111111; --surface-1: #1a1a19; --surface-2: #262624;
+  --panel-bg: #1a1a19;
+  --panel-line: rgba(255,255,255,.10);
   --sidebar: #111111;
   --ink: #fcfcfb; --muted: #b9bec6; --faint: #929aa5;
   --line: rgba(255,255,255,.08); --line-strong: rgba(255,255,255,.16);

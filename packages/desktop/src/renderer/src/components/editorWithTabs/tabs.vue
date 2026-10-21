@@ -5,7 +5,8 @@
     :class="{ single: scene === 'single', 'native-fullscreen': nativeFullscreen }"
   >
     <button
-      class="tb-toggle"
+      v-if="!showSideBar"
+      class="tb-toggle sidebar-toggle"
       :class="{ on: showSideBar }"
       :title="t('sideBar.toggleTitle') + ' ⌘\\'"
       :aria-label="t('sideBar.toggleTitle')"

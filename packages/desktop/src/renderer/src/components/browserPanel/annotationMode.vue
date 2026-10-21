@@ -20,7 +20,7 @@
           {{ t('annotation.history') }}
         </button>
       </div>
-      <div class="counts">
+      <div class="counts" :class="{ 'is-zero': !counts.pending && !counts.copied && !counts.orphan }">
         {{ t('annotation.count.uncopied') }} <b>{{ counts.pending }}</b> ·
         {{ t('annotation.count.copied') }} <b>{{ counts.copied }}</b> ·
         {{ t('annotation.count.orphan') }} <b>{{ counts.orphan }}</b>
@@ -60,7 +60,7 @@
     <!-- ── 当前视图 ── -->
     <div v-if="view === 'current'" class="ann-list">
       <div v-if="!currentList.length && !orphanList.length" class="empty">
-        {{ t('annotation.empty.current') }}<br />{{ t('annotation.empty.currentSub') }}
+        选中正文内容，即可添加标注。
       </div>
       <template v-else>
         <annotation-card

@@ -1,4 +1,4 @@
-import { computed, ref } from 'vue'
+import { computed, ref, onScopeDispose } from 'vue'
 import { defineStore } from 'pinia'
 import bus from '../bus'
 import { usePreferencesStore } from './preferences'
@@ -17,10 +17,10 @@ interface SetLayoutOptions {
 
 const normalizeSideBarWidth = (width: unknown): number => {
   // round27：左侧栏宽度可拖动（220px ≤ w ≤ min(560px, 50% 窗宽)），
-  // 缺省 288px（原固定宽度）。Number(null)=0 会误归一到 220，先判空。
-  if (width === null || width === undefined || width === '') return 288
+  // 缺省 260px（原固定宽度）。Number(null)=0 会误归一到 220，先判空。
+  if (width === null || width === undefined || width === '') return 260
   const numericWidth = Number(width)
-  return Number.isFinite(numericWidth) ? Math.max(numericWidth, 220) : 288
+  return Number.isFinite(numericWidth) ? Math.max(numericWidth, 220) : 260
 }
 
 interface BufferedLayout {
@@ -56,9 +56,13 @@ export const useLayoutStore = defineStore('layout', () => {
 
   // round27：左侧栏宽度可拖动（用户拍板恢复可调）——展开宽度=用户拖出的
   // sideBarWidth（localStorage 持久化），收起=0 无占位。
+  const viewportWidth = ref(window.innerWidth)
+  const updateViewport = () => { viewportWidth.value = window.innerWidth }
+  window.addEventListener('resize', updateViewport)
+  onScopeDispose(() => window.removeEventListener('resize', updateViewport))
   const effectiveSideBarWidth = computed<number>(() => {
     if (!showSideBar.value) return 0
-    return sideBarWidth.value
+    return Math.min(sideBarWidth.value, Math.max(220, viewportWidth.value * 0.45))
   })
 
   function SET_LAYOUT(
@@ -138,7 +142,7 @@ export const useLayoutStore = defineStore('layout', () => {
     const max = Math.max(220, Math.min(560, window.innerWidth * 0.5))
     const normalizedWidth = Number.isFinite(raw)
       ? Math.round(Math.max(220, Math.min(max, raw)))
-      : 288
+      : 260
     localStorage.setItem('side-bar-width', String(normalizedWidth))
     sideBarWidth.value = normalizedWidth
     if (scheduleBufferUpdate) {

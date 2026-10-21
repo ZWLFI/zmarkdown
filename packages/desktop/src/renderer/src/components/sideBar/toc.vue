@@ -1,7 +1,7 @@
 <template>
   <div class="side-bar-toc">
     <!-- 原型 sb-head：「大纲 · 文档标题」，f11/600/ink3，padding 6px 8px 7px -->
-    <div v-if="headLabel" class="sb-head">大纲 · {{ headLabel }}</div>
+    <div v-if="headLabel" class="sb-head" :title="headLabel">{{ headLabel }}</div>
     <div v-if="listToc.length" class="toc-list">
       <div
         v-for="(item, index) of listToc"
@@ -9,6 +9,10 @@
         class="sb-row"
         :class="[`lv${tocLevel(item)}`, { sel: isSel(item) }]"
         :title="String(item.content ?? '')"
+        role="button"
+        tabindex="0"
+        @keydown.enter.prevent="handleClick(item)"
+        @keydown.space.prevent="handleClick(item)"
         @click="handleClick(item)"
         @mousedown.prevent
       >
@@ -16,7 +20,7 @@
       </div>
     </div>
     <div v-else class="sb-empty">
-      <span>{{ t('sideBar.toc.empty') }}</span>
+      <span>添加标题后，将在这里显示目录。</span>
     </div>
   </div>
 </template>
@@ -26,7 +30,6 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useEditorStore } from '@/store/editor'
 import bus from '../../bus'
-import { t } from '../../i18n'
 
 const editorStore = useEditorStore()
 

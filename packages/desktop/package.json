@@ -1,6 +1,6 @@
 {
   "name": "zmarkdown",
-  "version": "1.6.2",
+  "version": "1.6.3",
   "description": "zmarkdown — Markdown editor maintained by ZWLFI, derived from MoMark and MarkText",
   "license": "AGPL-3.0-only",
   "main": "./out/main/index.js",

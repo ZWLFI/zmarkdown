@@ -8,35 +8,6 @@
     :style="showSideBar ? { width: `${effectiveSideBarWidth}px` } : { width: '0px' }"
   >
     <div class="sb-inner">
-      <!-- 顶部「大纲 / 文件」双 tab：白色滑块在选中项间滑动（回弹缓动，非线性），
-           按钮自身不再换底，仅滑块位移 + 文字颜色过渡。 -->
-      <div
-        class="sb-tabs"
-        role="tablist"
-      >
-        <span
-          class="sb-slider"
-          :class="{ right: activeTab === 'files' }"
-          aria-hidden="true"
-        />
-        <button
-          role="tab"
-          :aria-selected="activeTab === 'outline'"
-          :class="{ on: activeTab === 'outline' }"
-          @click="selectTab('outline')"
-        >
-          {{ t('sideBar.tabs.outline') }}
-        </button>
-        <button
-          role="tab"
-          :aria-selected="activeTab === 'files'"
-          :class="{ on: activeTab === 'files' }"
-          @click="selectTab('files')"
-        >
-          {{ t('sideBar.tabs.files') }}
-        </button>
-      </div>
-
       <!-- 大纲 tab -->
       <div
         v-show="activeTab === 'outline'"
@@ -57,7 +28,12 @@
     <div
       v-if="showSideBar"
       class="sb-resize-handle"
-      aria-hidden="true"
+      role="separator"
+      aria-label="左侧栏宽度"
+      aria-orientation="vertical"
+      tabindex="0"
+      @keydown.right.prevent="layoutStore.SET_SIDE_BAR_WIDTH(effectiveSideBarWidth + 16)"
+      @keydown.left.prevent="layoutStore.SET_SIDE_BAR_WIDTH(effectiveSideBarWidth - 16)"
       @pointerdown="onResizeDown"
       @pointermove="onResizeMove"
       @pointerup="onResizeUp"
@@ -70,7 +46,6 @@
 import { computed, ref } from 'vue'
 import { useLayoutStore } from '@/store/layout'
 import { storeToRefs } from 'pinia'
-import { t } from '../../i18n'
 
 import Tree from './tree.vue'
 import Toc from './toc.vue'
@@ -91,11 +66,11 @@ const onResizeDown = (event: PointerEvent) => {
   if (!showSideBar.value) return
   resizing.value = true
   ;(event.currentTarget as HTMLElement).setPointerCapture(event.pointerId)
-  layoutStore.SET_SIDE_BAR_WIDTH(event.clientX - 10, { scheduleBufferUpdate: false })
+  layoutStore.SET_SIDE_BAR_WIDTH(event.clientX, { scheduleBufferUpdate: false })
 }
 const onResizeMove = (event: PointerEvent) => {
   if (!resizing.value) return
-  layoutStore.SET_SIDE_BAR_WIDTH(event.clientX - 10, { scheduleBufferUpdate: false })
+  layoutStore.SET_SIDE_BAR_WIDTH(event.clientX, { scheduleBufferUpdate: false })
 }
 const onResizeUp = () => {
   if (!resizing.value) return
@@ -103,12 +78,6 @@ const onResizeUp = () => {
   layoutStore.SET_SIDE_BAR_WIDTH(effectiveSideBarWidth.value)
 }
 
-const selectTab = (tab: SideBarTab): void => {
-  const column = tab === 'outline' ? 'toc' : 'files'
-  if (rightColumn.value !== column) {
-    layoutStore.SET_LAYOUT({ rightColumn: column })
-  }
-}
 </script>
 
 <style scoped>

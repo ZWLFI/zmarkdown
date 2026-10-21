@@ -48,6 +48,7 @@
             aria-hidden="true"
           >{{ row.kind === 'directory' ? (expanded.has(row.pathname) ? '▾' : '▸') : row.kind === 'link' ? '↗' : '·' }}</span>
           <span class="fname">{{ row.name }}</span>
+          <span v-if="tabs.some(tab => tab.pathname === row.pathname && !tab.isSaved)" class="file-dirty" aria-label="未保存" title="未保存">●</span>
           <span
             v-if="row.kind === 'link'"
             class="cur"
