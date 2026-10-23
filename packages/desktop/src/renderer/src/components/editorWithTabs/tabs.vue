@@ -21,6 +21,8 @@
     <div
       ref="tabContainer"
       class="tabstrip"
+      role="tablist"
+      aria-label="文档"
       :class="{ 'fade-l': overflowLeft, 'fade-r': overflowRight }"
       @scroll.passive="updateOverflowFade"
     >
@@ -31,6 +33,10 @@
         :class="{ active: currentFile?.id === file.id, dirty: !file.isSaved }"
         :title="file.pathname || file.filename"
         :data-id="file.id"
+        role="tab"
+        :aria-selected="currentFile?.id === file.id"
+        :tabindex="currentFile?.id === file.id ? 0 : -1"
+        @keydown="onTabKeydown($event, file)"
         @click.stop="selectFile(file)"
         @click.middle="closeTab(file.id)"
         @contextmenu.prevent="handleContextMenu($event, file)"
@@ -48,6 +54,8 @@
           v-if="visibleTabs.length > 1"
           class="tclose"
           :title="t('tabs.closeTab')"
+          :aria-label="`${t('tabs.closeTab')} ${file.filename}`"
+          :tabindex="currentFile?.id === file.id ? 0 : -1"
           @click.stop="removeFileInTab(file)"
         >
           <mo-icon name="i-x" />
@@ -199,6 +207,29 @@ const selectFile = (file: IFileState) => {
   // 起跳信号：editor.vue 监听此事件，同步起跳后再落地切换。
   document.dispatchEvent(new CustomEvent('momark:tab-enter', { detail: { direction } }))
   editorStore.UPDATE_CURRENT_FILE(file)
+}
+
+// Roving focus keeps a long tab strip reachable without tabbing through every file.
+const onTabKeydown = async (event: KeyboardEvent, file: IFileState) => {
+  if (event.target !== event.currentTarget || event.altKey || event.metaKey || event.ctrlKey) return
+  const files = visibleTabs.value
+  const index = files.findIndex(item => item.id === file.id)
+  let target = index
+  if (event.key === 'ArrowLeft') target = (index - 1 + files.length) % files.length
+  else if (event.key === 'ArrowRight') target = (index + 1) % files.length
+  else if (event.key === 'Home') target = 0
+  else if (event.key === 'End') target = files.length - 1
+  else if (event.key !== 'Enter' && event.key !== ' ') return
+  event.preventDefault()
+  event.stopPropagation()
+  const next = files[target]
+  if (!next) return
+  selectFile(next)
+  await nextTick()
+  const element = Array.from(tabContainer.value?.querySelectorAll<HTMLElement>('.tab') || [])
+    .find(tab => tab.dataset.id === next.id)
+  element?.focus({ preventScroll: true })
+  element?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
 }
 
 const removeFileInTab = (file: IFileState) => {
@@ -533,6 +564,10 @@ const setupTabsRuntime = () => {
   nextTick(() => moveIndicator(false))
 
   resizeObserver = new ResizeObserver(() => {
+    const focused = document.activeElement?.closest<HTMLElement>('.tab')
+    if (focused && tabContainer.value?.contains(focused)) {
+      focused.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+    }
     moveIndicator(true)
     updateOverflowFade()
   })
@@ -866,7 +901,8 @@ onBeforeUnmount(() => {
   transition: all 0.15s ease;
   padding: 0;
 }
-.tab:hover .tclose {
+.tab:hover .tclose,
+.tab:focus-within .tclose {
   opacity: 1;
 }
 /* 原型：关闭图标 10px，墨灰 #898781 级 */
@@ -952,4 +988,9 @@ onBeforeUnmount(() => {
   .compact-mac .window-drag-region { flex-basis: 32px; }
   .compact-mac .open-files { max-width: 100px; }
 }
+</style>
+
+<style scoped>
+.tabstrip.fade-l:focus-within, .tabstrip.fade-r:focus-within { mask-image: none; }
+.tab:focus-visible, .tclose:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 </style>

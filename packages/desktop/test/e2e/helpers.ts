@@ -66,11 +66,11 @@ export const launchElectron = async(
   options: LaunchOptions = {}
 ): Promise<LaunchResult> => {
   userArgs = userArgs || []
-  const executablePath = getElectronPath()
+  const executablePath = process.env.PANEL_APP || getElectronPath()
   // Pass project root as entry so Electron reads package.json and getAppPath() returns project root.
   // Passing out/main/index.js directly bypasses package.json and breaks __static path resolution.
   const userDataDir = trackTempDir(getTempPath())
-  const args = [projectRoot, '--user-data-dir', userDataDir].concat(userArgs)
+  const args = [...(process.env.PANEL_APP ? [] : [projectRoot]), '--user-data-dir', userDataDir].concat(userArgs)
   const env: Record<string, string> = {}
   for (const [k, v] of Object.entries(process.env)) if (v !== undefined) env[k] = v
   env.PERF_TESTING = 'true'
@@ -347,6 +347,8 @@ export const launchWithMarkdown = async(
 ): Promise<LaunchWithMarkdownResult> => {
   const filePath = writeTempMarkdown(markdown)
   const { app, page } = await launchElectron([filePath], options)
+  // Startup may briefly render an untitled editor before opening the requested fixture.
+  await expect(page.locator('.editor-tabs .tab.active')).toHaveAttribute('title', filePath)
   await waitForEditor(page)
   await waitForMenuReady(app)
   return { app, page, filePath }
@@ -372,4 +374,28 @@ export const closeTestApp = async(app: ElectronApplication): Promise<void> => {
     for (const win of BrowserWindow.getAllWindows()) win.destroy()
   })
   await app.close()
+}
+
+// Wait for the native transition, not a fixed animation delay. On failure report
+// native state separately from renderer state so a missed IPC is distinguishable.
+export const setTestFullscreen = async (app: ElectronApplication, fullscreen: boolean): Promise<void> => {
+  const state = await app.evaluate(async ({ BrowserWindow }, target) => {
+    const win = BrowserWindow.getAllWindows()[0]
+    if (!win) throw new Error('No test window')
+    const snapshot = () => ({ fullscreen: win.isFullScreen(), focused: win.isFocused(), visible: win.isVisible(), minimized: win.isMinimized(), bounds: win.getBounds() })
+    win.focus()
+    if (win.isFullScreen() === target) return snapshot()
+    return new Promise<ReturnType<typeof snapshot>>((resolve, reject) => {
+      const done = () => { clearTimeout(timer); resolve(snapshot()) }
+      const timer = setTimeout(() => {
+        if (target) win.removeListener('enter-full-screen', done)
+        else win.removeListener('leave-full-screen', done)
+        reject(new Error(`Native fullscreen transition timed out: ${JSON.stringify(snapshot())}`))
+      }, 15000)
+      if (target) win.once('enter-full-screen', done)
+      else win.once('leave-full-screen', done)
+      win.setFullScreen(target)
+    })
+  }, fullscreen)
+  console.log('Native fullscreen transition', JSON.stringify(state))
 }

@@ -302,8 +302,19 @@ test.describe('Item 256 — save -> clean -> edit -> dirty -> undo-to-saved cycl
     const { app, page, filePath } = await launchWithMarkdown('hello world\n')
     await waitForMenuReady(app)
 
-    // Freshly-loaded saved doc: no dirty dot yet.
-    expect(await isTabDirty(page)).toBe(false)
+    // Keep the assertion strict; capture the actual fixture and bytes if startup
+    // ever reports dirty before this test has performed an edit.
+    const initialState = await page.evaluate(() => ({
+      dirty: !!document.querySelector('.editor-tabs .tab.dirty'),
+      tabs: Array.from(document.querySelectorAll('.editor-tabs .tab')).map(el => ({
+        title: el.getAttribute('title'), classes: el.className
+      })),
+      text: document.querySelector('.editor-component')?.textContent,
+      focused: document.hasFocus()
+    }))
+    expect(initialState.dirty, JSON.stringify({
+      initialState, expectedPath: filePath, disk: readFileSync(filePath, 'utf8')
+    })).toBe(false)
 
     // 1) Edit to dirty the tab. Let the type fully commit as its own engine undo
     //    boundary before sealing it (a too-early follow-up edit/undo can collapse

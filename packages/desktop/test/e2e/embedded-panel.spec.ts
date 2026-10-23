@@ -3,7 +3,7 @@ import { _electron, type ElectronApplication } from 'playwright'
 import { mkdtempSync, writeFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
-import { getElectronPath, closeTestApp } from './helpers'
+import { getElectronPath, closeTestApp, setTestFullscreen } from './helpers'
 
 test('embedded panel aligns, remembers width and retains documents across modes', async () => {
   test.setTimeout(120000)
@@ -79,13 +79,12 @@ test('embedded panel aligns, remembers width and retains documents across modes'
     await page.getByRole('tab', { name: '网页', exact: true }).click()
     await expect(page.locator('.bp-browserbar')).toBeVisible()
     await page.screenshot({ path: resolve(__dirname, '../../../../../evidence/embedded-web.png') })
-    await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].setFullScreen(true))
-    await expect.poll(() => app!.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].isFullScreen())).toBe(true)
-    await page.waitForTimeout(1200)
+    await setTestFullscreen(app, true)
+    await expect(page.locator('.editor-tabs')).toHaveClass(/native-fullscreen/)
     expect(await page.locator('.right-panel-header').evaluate(e => e.getBoundingClientRect().top)).toBe(0)
     await page.screenshot({ path: resolve(__dirname, '../../../../../evidence/embedded-fullscreen.png') })
-    await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].setFullScreen(false))
-    await page.waitForTimeout(1200)
+    await setTestFullscreen(app, false)
+    await expect(page.locator('.editor-tabs')).not.toHaveClass(/native-fullscreen/)
     await closeTestApp(app)
     app = await launch()
     page = await app.firstWindow()

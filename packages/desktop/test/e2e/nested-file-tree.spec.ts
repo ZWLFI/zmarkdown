@@ -3,7 +3,7 @@ import { _electron, type ElectronApplication } from 'playwright'
 import { mkdtempSync, mkdirSync, writeFileSync, symlinkSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
-import { getElectronPath, closeTestApp } from './helpers'
+import { getElectronPath, closeTestApp, setTestFullscreen } from './helpers'
 
 test('nested tree loads on demand, opens exact paths, restores state and aligns fullscreen toggle', async() => {
   test.setTimeout(90000)
@@ -52,14 +52,11 @@ test('nested tree loads on demand, opens exact paths, restores state and aligns 
     const left = await page.locator('.sidebar-toggle').first().evaluate(e => e.getBoundingClientRect().left)
     expect(left).toBe(88)
     await page.screenshot({ path: resolve(__dirname, '../../../../..', 'evidence/tree-window.png') })
-    // Native fullscreen needs macOS startup/transition settling before requests.
-    await page.waitForTimeout(1500)
-    await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].setFullScreen(true))
+    await setTestFullscreen(app, true)
     await expect(page.locator('.editor-tabs')).toHaveClass(/native-fullscreen/, { timeout: 15000 })
     expect(await page.locator('.sidebar-toggle').first().evaluate(e => e.getBoundingClientRect().left)).toBe(8)
     await page.screenshot({ path: resolve(__dirname, '../../../../..', 'evidence/tree-fullscreen.png') })
-    await page.waitForTimeout(800)
-    await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].setFullScreen(false))
+    await setTestFullscreen(app, false)
     await expect(page.locator('.editor-tabs')).not.toHaveClass(/native-fullscreen/)
     await page.evaluate(() => window.electron.ipcRenderer.send('mt::set-user-preference', { theme: 'dark' }))
     await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].setSize(640, 800))

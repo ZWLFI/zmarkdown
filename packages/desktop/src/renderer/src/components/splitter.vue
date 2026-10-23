@@ -7,14 +7,16 @@
     aria-label="右侧栏宽度"
     aria-orientation="vertical"
     tabindex="0"
-    @keydown.left.prevent="bpStore.SET_URL_WIDTH(bpStore.urlWidth + 16)"
-    @keydown.right.prevent="bpStore.SET_URL_WIDTH(bpStore.urlWidth - 16)"
+    @keydown.left.prevent="bpStore.SET_URL_WIDTH(workspaceStore.panelWidthPx + 16)"
+    @keydown.right.prevent="bpStore.SET_URL_WIDTH(workspaceStore.panelWidthPx - 16)"
     @pointerdown="onPointerDown"
+    @lostpointercapture="onPointerUp"
   />
 </template>
 
 <script setup lang="ts">
 import { ref, onBeforeUnmount } from 'vue'
+import { useWorkspaceStore } from '@/store/workspace'
 import { useSplitStore } from '@/store/split'
 import { useBrowserPanelStore } from '@/store/browserPanel'
 
@@ -24,6 +26,7 @@ import { useBrowserPanelStore } from '@/store/browserPanel'
  * 与网页模式（写 bp.urlWidth，同一夹逼区间）。拖动结束不弹 toast。
  */
 
+const workspaceStore = useWorkspaceStore()
 const splitStore = useSplitStore()
 const bpStore = useBrowserPanelStore()
 const splitterEl = ref<HTMLElement | null>(null)
@@ -40,6 +43,7 @@ const panelWidthFrom = (clientX: number) => {
 }
 
 const onPointerDown = (event: PointerEvent) => {
+  if (event.button !== 0) return
   dragging = true
   splitStore.draggingSplit = true
   const el = splitterEl.value
@@ -68,6 +72,7 @@ const onPointerUp = () => {
 }
 
 onBeforeUnmount(() => {
+  onPointerUp()
   const el = splitterEl.value
   el?.removeEventListener('pointermove', onPointerMove)
   el?.removeEventListener('pointerup', onPointerUp)
