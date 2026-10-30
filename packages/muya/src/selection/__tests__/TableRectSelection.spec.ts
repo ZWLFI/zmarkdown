@@ -100,6 +100,26 @@ function dispatchCopy(muya: Muya, type: 'copy' | 'cut') {
 }
 
 describe('cross-cell table selection — highlight', () => {
+    it('drops the old cell rectangle when keyboard navigation establishes a text selection', () => {
+        const muya = bootMuya(TABLE_MD);
+        const table = firstTable(muya);
+        dragSelect(table, 0, 0, 1, 1);
+        const content = table.cellAt(2, 2)!.firstChild;
+        if (!content?.isContent())
+            throw new Error('Missing cell content');
+
+        content.setCursor(0, 1, true);
+
+        expect(muya.editor.selection.getSelection()?.isCollapsed).toBe(false);
+        expect(muya.editor.selection.table.hasSelection).toBe(false);
+        expect(selectedCount(table)).toBe(0);
+        const data = dispatchCopy(muya, 'cut');
+        expect(data.get('text/plain')).toBe('c');
+        expect(content.text).toBe('3');
+        expect(muya.getMarkdown()).toContain('a1');
+        expect(muya.getMarkdown()).toContain('b2');
+    });
+
     it('highlights the dragged rectangle of cells', () => {
         const muya = bootMuya(TABLE_MD);
         const table = firstTable(muya);

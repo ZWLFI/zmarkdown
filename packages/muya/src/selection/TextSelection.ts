@@ -211,6 +211,9 @@ class TextSelection {
     }
 
     setSelection(anchor: IAnchorFocusInfo, focus: IAnchorFocusInfo) {
+        // Keyboard navigation can establish text selection without a mousedown.
+        // An old cell rectangle must no longer own delete/cut/copy/paste.
+        this._selection.table.clear();
         this.anchor = { offset: anchor.offset };
         this.anchorBlock = anchor.block;
         this.anchorPath = anchor.path;
@@ -273,8 +276,11 @@ class TextSelection {
         };
 
         const handleMouseupOrLeave = () => {
-            if (this._selectInfo.selection)
-                this.setSelection(this._selectInfo.selection.anchor, this._selectInfo.selection.focus);
+            // Native selection can advance after the last mousemove handler.
+            // Never replay its older, potentially larger range on release.
+            const selection = this._selectInfo.selection ? this.getSelection() : null;
+            if (selection)
+                this.setSelection(selection.anchor, selection.focus);
 
             this._selectInfo = {
                 isSelect: false,
@@ -300,6 +306,9 @@ class TextSelection {
             const { anchor, focus, isSelectionInSameBlock } = selection;
 
             if (isSelectionInSameBlock) {
+                // A drag can return from another block; do not restore that
+                // earlier, larger range when the user releases the mouse.
+                this._selectInfo.selection = null;
                 return;
             }
 

@@ -89,7 +89,9 @@ export default defineConfig({
         common: resolve(__dirname, 'src/common'),
         muya: resolve(__dirname, '../muyajs'),
         '@shared': resolve(__dirname, 'src/shared'),
-        path: 'pathe'
+        path: 'pathe',
+        // Reused node_modules may still point workspace packages at an old checkout.
+        '@muyajs/core': resolve(__dirname, '../muya/src')
       },
       extensions: ['.mjs', '.ts', '.js', '.json', '.vue']
     },

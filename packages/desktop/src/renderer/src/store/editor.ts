@@ -1649,7 +1649,7 @@ export const useEditorStore = defineStore('editor', {
       debouncedSendBufferedState()
     },
 
-    HANDLE_AUTO_SAVE({ id, filename, pathname, markdown, options }: AutoSavePayload): void {
+    HANDLE_AUTO_SAVE({ id, pathname }: AutoSavePayload): void {
       if (!id || !pathname) {
         throw new Error('HANDLE_AUTO_SAVE: Invalid tab.')
       }
@@ -1664,25 +1664,23 @@ export const useEditorStore = defineStore('editor', {
         autoSaveTimers.delete(id)
       }
 
-      // F1(P0-4)：版本在布防时取——定时器到点发出去的是这一刻的 markdown 快照，
-      // 版本必须与之同源，否则回执对账会拿错基准。
-      const version = getSaveVersion(this.tabs.find((t) => t.id === id))
-
       const timer = setTimeout(() => {
         autoSaveTimers.delete(id)
 
+        // Waiting can span a preference change, rename, Save As, or another edit.
+        // Read the path, content, options and receipt version from the same live tab.
         const tab = this.tabs.find((t) => t.id === id)
-        if (tab && !tab.isSaved) {
+        if (preferencesStore.autoSave && tab?.pathname && !tab.isSaved) {
           const defaultPath = getRootFolderFromState(projectStore)
           window.electron.ipcRenderer.send(
             'mt::response-file-save',
             id,
-            filename,
-            pathname,
-            markdown,
-            deepClone(options),
+            tab.filename,
+            tab.pathname,
+            tab.markdown,
+            deepClone(getOptionsFromState(tab)),
             defaultPath,
-            version
+            getSaveVersion(tab)
           )
         }
       }, autoSaveDelay)
