@@ -117,7 +117,7 @@ class Delivery:
         require(self.app.exists(),'包不存在；重新 --stage package')
         require(self.digest_app(self.app)==self.state.get('bundleHash'),'包已改变；重新打包与验收')
     def build(self):
-        self.run(['pnpm','typecheck']); self.run(['pnpm','--filter','zmarkdown','build'])
+        self.run(['pnpm','typecheck']); self.run(['pnpm','--filter','zmarkdown','build:unpack'])
         self.state['outHash']=self.digest_app(self.root/'packages/desktop/out')
     def test(self):
         self.need('build')

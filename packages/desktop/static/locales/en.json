@@ -261,7 +261,8 @@
     },
     "tabs": {
       "outline": "Outline",
-      "files": "Files"
+      "files": "Files",
+      "search": "Search"
     },
     "toggleTitle": "Show/Hide Side Bar",
     "rightPanelTitle": "Right Panel / Browser Panel (drag a tab here to split)"
@@ -1224,5 +1225,28 @@
     "filterFiles": "Filter files",
     "refreshFiles": "Refresh files",
     "noMatches": "No matching files"
+  },
+  "fileOperation": {
+    "searching": "Searching…",
+    "searchCanceled": "Search canceled",
+    "searchFailed": "Search failed: {reason}. Check the expression or folder permissions and retry.",
+    "renameMissing": "The file is closed or has not been saved. Save it first.",
+    "renameInvalid": "Enter a valid filename without path separators.",
+    "renameCanceled": "Replacement canceled. Edit the name and retry.",
+    "renameFailed": "Rename failed: {reason}",
+    "EACCES": "Check the folder write permissions and retry.",
+    "EPERM": "Check permissions or the file lock.",
+    "ENOENT": "The original file or folder no longer exists. Check its location.",
+    "ENOSPC": "Free disk space and retry.",
+    "EINVAL": "Edit the invalid filename and retry.",
+    "renaming": "Renaming…",
+    "renameConfirm": "Confirm rename",
+    "cancel": "Cancel",
+    "saveWaiting": "Waiting to save automatically",
+    "saving": "Saving…",
+    "saveFailed": "Save failed",
+    "saveRetry": "Retry save",
+    "lastSaved": "Last saved: {time}",
+    "notSaved": "Not yet saved to a file"
   }
 }

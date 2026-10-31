@@ -3,7 +3,8 @@
     <button class="tb-toggle sidebar-toggle on" :aria-pressed="showSideBar" :aria-label="t('sideBar.toggleTitle')" :title="t('sideBar.toggleTitle')" @click="layout.SET_LAYOUT({ showSideBar: false })"><mo-icon name="i-sidebar" /></button>
     <div class="sidebar-main-tabs" role="tablist" aria-label="左侧栏模式">
       <button role="tab" :aria-selected="rightColumn === 'toc'" @click="layout.SET_LAYOUT({ rightColumn: 'toc' })">{{ t('sideBar.tabs.outline') }}</button>
-      <button role="tab" :aria-selected="rightColumn !== 'toc'" @click="layout.SET_LAYOUT({ rightColumn: 'files' })">{{ t('sideBar.tabs.files') }}</button>
+      <button role="tab" :aria-selected="rightColumn !== 'toc' && rightColumn !== 'search'" @click="layout.SET_LAYOUT({ rightColumn: 'files' })">{{ t('sideBar.tabs.files') }}</button>
+      <button role="tab" :title="t('menu.edit.findInFolder')" :aria-selected="rightColumn === 'search'" @click="layout.SET_LAYOUT({ rightColumn: 'search' })">{{ t('sideBar.tabs.search') }}</button>
     </div>
   </div>
 </template>
@@ -21,3 +22,7 @@ const offLeave = window.electron.ipcRenderer.on('mt::window-leave-full-screen', 
 onMounted(async () => { nativeFullscreen.value = await window.electron.windowControl.isFullScreen() })
 onBeforeUnmount(() => { offEnter(); offLeave() })
 </script>
+
+<style scoped>
+.sidebar-main-tabs > button { overflow: hidden; text-overflow: ellipsis; }
+</style>

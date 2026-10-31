@@ -199,3 +199,35 @@ describe('P0-4 — 保存回执按内容版本对账', () => {
     expect(tab.lastSavedHistoryId).toBeUndefined()
   })
 })
+
+
+describe('save progress feedback', () => {
+  beforeEach(() => setActivePinia(createPinia()))
+  it('shows a failure and clears it only after a later successful receipt', () => {
+    const store = useEditorStore(), tab = seedTab(store), handlers = captureHandlers(store)
+    tab.notifications = [{ msg: 'keep other warning', exclusiveType: 'other' } as never]
+    handlers.get('mt::tab-saving')!(null, tab.id, '/tmp/note.md')
+    expect(tab.saveStatus).toBe('saving'); expect(tab.saveTarget).toBe('/tmp/note.md')
+    handlers.get('mt::tab-save-failure')!(null, tab.id, 'disk full')
+    expect(tab.saveStatus).toBe('failed'); expect(tab.isSaved).toBe(false)
+    handlers.get('mt::tab-save-failure')!(null, tab.id, 'disk still full')
+    expect(tab.notifications).toHaveLength(2)
+    handlers.get('mt::tab-saving')!(null, tab.id, '/tmp/note.md')
+    handlers.get('mt::tab-saved')!(null, tab.id, 2)
+    expect(tab.saveStatus).toBeUndefined(); expect(tab.saveError).toBeUndefined(); expect(tab.savedAt).toBeGreaterThan(0)
+    expect(tab.notifications).toHaveLength(1); expect(tab.notifications[0].exclusiveType).toBe('other')
+  })
+  it('does not treat a rename receipt as a save of dirty content', () => {
+    const store = useEditorStore(), tab = seedTab(store), handlers = captureHandlers(store)
+    handlers.get('mt::set-pathname')!(null, { id: tab.id, pathname: '/tmp/new.md', filename: 'new.md', pathOnly: true })
+    expect(tab.pathname).toBe('/tmp/new.md'); expect(tab.isSaved).toBe(false); expect(tab.savedAt).toBeUndefined()
+  })
+  it('reopens Save As after a failure to a different destination', () => {
+    const store = useEditorStore(), tab = seedTab(store)
+    tab.saveTarget = '/tmp/other.md'
+    vi.spyOn(store, 'getSaveTarget').mockReturnValue(tab)
+    const save = vi.spyOn(store, 'FILE_SAVE').mockImplementation(() => {})
+    const saveAs = vi.spyOn(store, 'FILE_SAVE_AS').mockImplementation(() => {})
+    store.RETRY_SAVE(); expect(saveAs).toHaveBeenCalledOnce(); expect(save).not.toHaveBeenCalled()
+  })
+})

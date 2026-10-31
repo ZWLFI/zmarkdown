@@ -1,128 +1,65 @@
 <template>
   <div class="rename">
-    <el-dialog
-      v-model="showRename"
-      :show-close="false"
-      :modal="true"
-      custom-class="ag-dialog-table"
-      width="410px"
-    >
-      <template #title>
-        <div class="search-wrapper">
-          <div class="input-wrapper">
-            <input
-              ref="search"
-              v-model="tempName"
-              type="text"
-              class="search"
-              @keyup.enter="confirm"
-            >
-            <el-icon
-              :size="16"
-              class="confirm-icon"
-              @click="confirm"
-            >
-              <Check />
-            </el-icon>
-          </div>
+    <el-dialog v-model="showRename" :show-close="false" :close-on-click-modal="!busy" :close-on-press-escape="!busy" width="410px">
+      <template #title>{{ t('fileOperation.renameConfirm') }}</template>
+      <form @submit.prevent="confirm">
+        <input ref="search" v-model="tempName" class="rename-name" :disabled="busy"
+          :aria-label="t('fileOperation.renameConfirm')" :aria-invalid="!!error" aria-describedby="rename-feedback"
+          @keydown.enter="onEnter" />
+        <p id="rename-feedback" role="alert" class="rename-feedback">{{ error || (busy ? t('fileOperation.renaming') : '') }}</p>
+        <div class="rename-actions">
+          <button type="button" :disabled="busy" @click="showRename = false">{{ t('fileOperation.cancel') }}</button>
+          <button type="submit" :disabled="busy">{{ t('fileOperation.renameConfirm') }}</button>
         </div>
-      </template>
+      </form>
     </el-dialog>
   </div>
 </template>
-
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue'
+import { ref, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import bus from '../../bus'
 import { useEditorStore } from '@/store/editor'
-import { Check } from '@element-plus/icons-vue'
-
+import { t } from '../../i18n'
+const editorStore = useEditorStore()
 const showRename = ref(false)
 const tempName = ref('')
 const search = ref<HTMLInputElement | null>(null)
-
-const editorStore = useEditorStore()
-
-const filename = computed(() => editorStore.currentFile?.filename ?? '')
-
+const busy = ref(false)
+const error = ref('')
+let targetId: string | undefined
 const handleRename = () => {
+  if (busy.value) return
+  targetId = editorStore.currentFile?.id
+  tempName.value = editorStore.currentFile?.filename ?? ''
+  error.value = ''
   showRename.value = true
-  tempName.value = filename.value
-  nextTick(() => {
-    if (search.value) {
-      search.value.focus()
-    }
-  })
+  nextTick(() => { search.value?.focus(); search.value?.select() })
 }
-
-const confirm = () => {
-  editorStore.RENAME(tempName.value)
-  showRename.value = false
-}
-
-onMounted(() => {
-  bus.on('rename', handleRename)
-})
-
-onBeforeUnmount(() => {
-  bus.off('rename', handleRename)
-})
-</script>
-
-<style>
-.rename .el-dialog__header {
-  box-sizing: border-box;
-}
-.rename .el-dialog__body {
-  display: none;
-}
-</style>
-
-<style scoped>
-.search-wrapper {
-  margin-top: 8px;
-  z-index: 10000;
-  position: relative;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 410px;
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  box-shadow: none;
-  border: none;
-  border-radius: 3px;
-  margin: 0;
-  padding: 0 8px;
-
-  & .input-wrapper {
-    display: flex;
-    width: 100%;
-    & input {
-      background: transparent;
-    }
+const confirm = async () => {
+  if (busy.value) return
+  busy.value = true
+  error.value = ''
+  try {
+    await editorStore.RENAME(tempName.value, targetId)
+    showRename.value = false
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : String(err)
+  } finally {
+    busy.value = false
+    if (showRename.value) nextTick(() => search.value?.focus())
   }
 }
-.search {
-  width: 100%;
-  height: 30px;
-  outline: none;
-  border: none;
-  font-size: 14px;
-  padding: 0 8px;
-  margin: 0 10px;
-  color: var(--sideBarColor);
+const onEnter = (event: KeyboardEvent) => {
+  event.preventDefault()
+  if (!event.isComposing && event.keyCode !== 229) void confirm()
 }
-.search-wrapper svg {
-  cursor: pointer;
-  margin: 0 5px;
-  width: 30px;
-  height: 30px;
-  color: var(--iconColor);
-  transition: all 0.3s ease-in-out;
-}
-.search-wrapper svg:hover {
-  color: var(--themeColor);
-}
+onMounted(() => bus.on('rename', handleRename))
+onBeforeUnmount(() => bus.off('rename', handleRename))
+</script>
+<style scoped>
+.rename-name { box-sizing: border-box; width: 100%; padding: 8px; color: var(--sideBarColor); background: var(--inputBgColor); border: 1px solid var(--floatBorderColor); border-radius: 4px; }
+.rename-feedback { min-height: 1.5em; overflow-wrap: anywhere; }
+.rename-actions { display: flex; justify-content: flex-end; gap: 8px; }
+button { padding: 5px 10px; cursor: pointer; }
+input:focus-visible, button:focus-visible { outline: 2px solid var(--highlightThemeColor); outline-offset: 2px; }
 </style>

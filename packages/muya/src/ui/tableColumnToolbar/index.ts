@@ -7,6 +7,7 @@ import { isMouseEvent, throttle } from '../../utils';
 import { h, patch } from '../../utils/snabbdom';
 import BaseFloat from '../baseFloat';
 import icons from './config';
+import { removalLabel } from '../tableRowColumMenu/scope';
 
 import './index.css';
 
@@ -116,9 +117,15 @@ export class TableColumnToolbar extends BaseFloat {
                 itemSelector,
                 {
                     attrs: {
-                        title: `${i18n.t(i.tooltip)}`,
+                        title: i.type === 'remove' && block ? removalLabel(block, 'column', i18n) : i18n.t(i.tooltip),
+                        'aria-label': i.type === 'remove' && block ? removalLabel(block, 'column', i18n) : i18n.t(i.tooltip),
+                        role: 'button', tabindex: '0',
                     },
                     on: {
+                        keydown: (event: KeyboardEvent) => {
+                            if (event.key === 'Enter' || event.key === ' ') this.selectItem(event, i);
+                            if (event.key === 'Escape') this.hide();
+                        },
                         click: (event) => {
                             this.selectItem(event, i);
                         },

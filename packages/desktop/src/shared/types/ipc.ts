@@ -39,6 +39,7 @@ import type { MenuTemplate, MenuPopupPosition } from './menu'
 // =================================================================
 
 export interface IpcInvokeChannels {
+  'mt::rename': { args: [payload: { id: string; pathname: string; newPathname: string }]; ret: { ok: boolean; canceled?: boolean; error?: string } }
   // ── 内容标注（feat/annotations，落盘见 main/annotationStore/index.ts）──
   // 标注按文件路径绑定，一份文档一个 JSON 文件；渲染层是数据的唯一写方，
   // 主进程只做原子落盘、条目级合并与历史容量修剪。
@@ -186,9 +187,6 @@ export interface IpcSendChannels {
   'mt::open-file-by-window-id': [windowId: number, filePath: string, options?: unknown]
   'mt::open-keybindings-config': []
   'mt::open-setting-window': []
-  'mt::rename': [
-    payload: { id: string; pathname: string; newPathname: string; currentFile?: unknown }
-  ]
   'mt::request-keybindings': []
   'mt::set-editor-format-menus-enabled': [windowId: number, enabled: boolean]
   'mt::response-export': [
@@ -342,7 +340,7 @@ export interface IpcMainEventChannels {
   'mt::screenshot-captured': [filePath: string]
   'mt::set-line-ending': [lineEnding: LineEnding]
   'mt::set-pathname': [
-    payload: { id: string; pathname: string; filename: string; version?: number }
+    payload: { id: string; pathname: string; filename: string; version?: number; pathOnly?: boolean }
   ]
   'mt::set-view-layout': [layout: unknown]
   'mt::show-command-palette': []
@@ -353,6 +351,7 @@ export interface IpcMainEventChannels {
   'mt::switch-tab-by-file_path': [filePath: string]
   'mt::switch-tab-by-index': [index: number]
   'mt::tab-save-failure': [tabId: string, message: string]
+  'mt::tab-saving': [tabId: string, pathname: string]
   'mt::tab-saved': [tabId: string, version?: number]
   'mt::tabs-cycle-left': []
   'mt::tabs-cycle-right': []

@@ -261,7 +261,8 @@
     },
     "tabs": {
       "outline": "大纲",
-      "files": "文件"
+      "files": "文件",
+      "search": "搜索"
     },
     "toggleTitle": "显示/隐藏侧栏",
     "rightPanelTitle": "右侧栏 / 浏览器面板（拖标签进面板可双屏分栏）",
@@ -1226,5 +1227,28 @@
     "filterFiles": "筛选文件",
     "refreshFiles": "刷新文件",
     "noMatches": "没有匹配的文件"
+  },
+  "fileOperation": {
+    "searching": "正在搜索…",
+    "searchCanceled": "已取消搜索",
+    "searchFailed": "搜索失败：{reason}。请检查表达式或文件夹权限后重试。",
+    "renameMissing": "文件已关闭或尚未保存，请先保存文件。",
+    "renameInvalid": "请输入有效文件名，不能包含路径分隔符。",
+    "renameCanceled": "已取消覆盖，名称已保留，可修改后重试。",
+    "renameFailed": "重命名失败：{reason}",
+    "EACCES": "没有写入权限，请检查文件夹权限后重试。",
+    "EPERM": "操作不被允许，请检查权限或文件锁定状态。",
+    "ENOENT": "原文件或目录已不存在，请确认文件位置。",
+    "ENOSPC": "磁盘空间不足，请释放空间后重试。",
+    "EINVAL": "文件名无效，请修改名称后重试。",
+    "renaming": "正在重命名…",
+    "renameConfirm": "确认重命名",
+    "cancel": "取消",
+    "saveWaiting": "等待自动保存",
+    "saving": "正在保存…",
+    "saveFailed": "保存失败",
+    "saveRetry": "重试保存",
+    "lastSaved": "最近保存：{time}",
+    "notSaved": "尚未保存到文件"
   }
 }

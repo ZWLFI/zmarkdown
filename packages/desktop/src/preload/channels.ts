@@ -20,6 +20,7 @@ import type {
 
 /** `ipcRenderer.invoke` 允许的通道（renderer → main，带返回值）。 */
 export const INVOKE_CHANNELS = [
+  'mt::rename',
   // renderer → main（invoke）
   'bp:activate',
   'bp:back',
@@ -133,7 +134,6 @@ export const SEND_CHANNELS = [
   'mt::open-file-by-window-id',
   'mt::open-keybindings-config',
   'mt::open-setting-window',
-  'mt::rename',
   'mt::request-keybindings',
   'mt::response-export',
   'mt::response-file-move-to',
@@ -245,6 +245,7 @@ export const EVENT_CHANNELS = [
   'mt::switch-tab-by-index',
   'mt::tab-save-failure',
   'mt::tab-saved',
+  'mt::tab-saving',
   'mt::tabs-cycle-left',
   'mt::tabs-cycle-right',
   'mt::toggle-view-layout-entry',

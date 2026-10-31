@@ -7,43 +7,54 @@
         type="text"
         class="search-input"
         :placeholder="t('sideBar.search.searchInFolder')"
-        @keyup="search"
+        @input="queueSearch"
+        @compositionstart="beginComposition"
+        @compositionend="endComposition"
+        :aria-label="t('sideBar.search.searchInFolder')"
       />
       <div class="controls">
-        <span
+        <button
+          type="button"
           :title="t('search.caseSensitive')"
           class="is-case-sensitive"
           :class="{ active: isCaseSensitive }"
+          :aria-pressed="isCaseSensitive"
           @click.stop="caseSensitiveClicked()"
         >
           <FindCaseIcon aria-hidden="true" />
-        </span>
-        <span
+        </button>
+        <button
+          type="button"
           :title="t('search.wholeWord')"
           class="is-whole-word"
           :class="{ active: isWholeWord }"
+          :aria-pressed="isWholeWord"
           @click.stop="wholeWordClicked()"
         >
           <FindWordIcon aria-hidden="true" />
-        </span>
-        <span
+        </button>
+        <button
+          type="button"
           :title="t('search.useRegex')"
           class="is-regex"
           :class="{ active: isRegexp }"
+          :aria-pressed="isRegexp"
           @click.stop="regexpClicked()"
         >
           <FindRegexIcon aria-hidden="true" />
-        </span>
+        </button>
       </div>
     </div>
 
     <div v-if="showNoFolderOpenedMessage" class="search-message-section">
       <span>{{ t('sideBar.search.noFolderOpen') }}</span>
     </div>
+    <div v-if="searcherRunning" class="search-message-section" role="status">{{ t('fileOperation.searching') }}</div>
+    <div v-if="searchCanceled" class="search-message-section" role="status">{{ t('fileOperation.searchCanceled') }}</div>
     <div v-if="showNoResultFoundMessage" class="search-message-section">
       {{ t('sideBar.search.noResultsFound') }}
     </div>
-    <div v-if="searchErrorString" class="search-message-section">
+    <div v-if="searchErrorString" class="search-message-section" role="alert">
       {{ searchErrorString }}
     </div>
 
@@ -73,7 +84,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, nextTick } from 'vue'
+import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { useLayoutStore } from '@/store/layout'
 import { useProjectStore } from '@/store/project'
 import { useEditorStore } from '@/store/editor'
@@ -98,6 +109,11 @@ const preferencesStore = usePreferencesStore()
 let searcherCancelCallback: (() => void) | null = null
 const ripgrepDirectorySearcher = new RipgrepDirectorySearcher()
 
+let generation = 0
+let composing = false
+let inputTimer: ReturnType<typeof setTimeout> | null = null
+const completed = ref(false)
+const searchCanceled = ref(false)
 const keyword = ref('')
 const searchResult = ref<SearchResult[]>([])
 const searcherRunning = ref(false)
@@ -119,6 +135,7 @@ const {
   searchFollowSymlinks
 } = storeToRefs(preferencesStore)
 
+const searchRoot = computed(() => projectTree.value?.pathname || (currentFile.value?.pathname ? window.path.dirname(currentFile.value.pathname) : ''))
 const searchMatches = computed(() => currentFile.value?.searchMatches)
 
 const searchResultInfo = computed(() => {
@@ -131,91 +148,88 @@ const searchResultInfo = computed(() => {
 })
 
 const showNoFolderOpenedMessage = computed(() => {
-  return !projectTree.value || !projectTree.value.pathname
+  return !searchRoot.value
 })
 
 const showNoResultFoundMessage = computed(() => {
   return (
-    searchResult.value.length === 0 && searcherRunning.value === false && keyword.value.length > 0
+    completed.value && !searchErrorString.value && !searchCanceled.value && !showNoFolderOpenedMessage.value && searchResult.value.length === 0 && !searcherRunning.value && keyword.value.length > 0
   )
 })
 
-const search = (): void => {
-  // No root directory is opened.
-  if (showNoFolderOpenedMessage.value || !projectTree.value) {
-    return
-  }
-
-  const { pathname: rootDirectoryPath } = projectTree.value
-
-  if (searcherRunning.value && searcherCancelCallback) {
-    searcherCancelCallback()
-  }
-
-  searchErrorString.value = ''
+const invalidateSearch = (): void => {
+  generation++
+  if (inputTimer) clearTimeout(inputTimer)
+  inputTimer = null
+  searcherCancelCallback?.()
   searcherCancelCallback = null
+  searcherRunning.value = false
+  completed.value = false
+  searchCanceled.value = false
+  searchErrorString.value = ''
+  searchResult.value = []
+  stopShowSearchCancelAreaTimer()
+}
 
-  if (!keyword.value) {
-    searchResult.value = []
-    searcherRunning.value = false
-    return
-  }
+const beginComposition = (): void => {
+  composing = true
+  invalidateSearch()
+}
+const queueSearch = (event?: Event): void => {
+  if (event?.target instanceof HTMLInputElement) keyword.value = event.target.value
+  invalidateSearch()
+  if (!composing && keyword.value) inputTimer = setTimeout(search, 200)
+}
+const endComposition = (event: CompositionEvent): void => {
+  composing = false
+  queueSearch(event)
+}
 
-  let canceled = false
+const search = (): void => {
+  invalidateSearch()
+  if (composing || !keyword.value || !searchRoot.value) return
+  const request = generation
+  const current = () => request === generation
   searcherRunning.value = true
   startShowSearchCancelAreaTimer()
-
-  const newSearchResult: SearchResult[] = []
-  // Keep a handle on the cancellable thenable separately from the chained
-  // `.then().catch()` (which is a plain `Promise<void>` and loses `cancel`).
-  const cancellable = ripgrepDirectorySearcher.search([rootDirectoryPath], keyword.value, {
+  const results: SearchResult[] = []
+  let limited = false
+  const cancellable = ripgrepDirectorySearcher.search([searchRoot.value], keyword.value, {
     didMatch: (res: unknown) => {
-      if (canceled) return
-      newSearchResult.push(res as SearchResult)
-    },
-    didSearchPaths: (numPathsFound: unknown) => {
-      // More than 100 files with (multiple) matches were found.
-      if (!canceled && typeof numPathsFound === 'number' && numPathsFound > 100) {
-        canceled = true
+      if (!current() || limited) return
+      if (results.length === 100) {
+        limited = true
         cancellable.cancel()
         searchErrorString.value = t('search.searchLimited', { count: 100 })
+        return
       }
+      results.push(res as SearchResult)
     },
-
-    // UI options
     isCaseSensitive: isCaseSensitive.value,
     isWholeWord: isWholeWord.value,
     isRegexp: isRegexp.value,
-
-    // Options loaded from settings
     exclusions: searchExclusions.value,
     maxFileSize: searchMaxFileSize.value || null,
     includeHidden: searchIncludeHidden.value,
     noIgnore: searchNoIgnore.value,
     followSymlinks: searchFollowSymlinks.value,
-
-    // Only search markdown files
     inclusions: window.fileUtils.MARKDOWN_INCLUSIONS
   })
-
-  cancellable
-    .then(() => {
-      searchResult.value = newSearchResult
-      searcherRunning.value = false
-      searcherCancelCallback = null
-      stopShowSearchCancelAreaTimer()
-    })
-    .catch((err) => {
-      canceled = true
-      cancellable.cancel()
-      log.error('Error while searching in directory:', err)
-      searchResult.value = []
-      searcherRunning.value = false
-      searcherCancelCallback = null
-      stopShowSearchCancelAreaTimer()
-    })
-
-  searcherCancelCallback = cancellable.cancel.bind(cancellable)
+  searcherCancelCallback = () => cancellable.cancel()
+  cancellable.then(() => {
+    if (!current()) return
+    searchResult.value = results
+    completed.value = true
+  }).catch((err) => {
+    if (!current()) return
+    log.error('Error while searching in directory:', err)
+    searchErrorString.value = t('fileOperation.searchFailed', { reason: String(err?.message || err) })
+  }).finally(() => {
+    if (!current()) return
+    searcherRunning.value = false
+    searcherCancelCallback = null
+    stopShowSearchCancelAreaTimer()
+  })
 }
 
 const handleFindInFolder = (executeSearch: boolean | unknown = true): void => {
@@ -224,8 +238,7 @@ const handleFindInFolder = (executeSearch: boolean | unknown = true): void => {
       searchEl.value.focus()
       // `searchMatches.value` may carry a `selectedText` populated elsewhere
       // (legacy contract from CodeMirror / find-in-page). Narrow defensively.
-      const selectedText = (searchMatches.value as { selectedText?: string } | undefined)
-        ?.selectedText
+      const selectedText = (searchMatches.value as { selectedText?: string } | undefined)?.selectedText || searchMatches.value?.value
       if (selectedText) {
         keyword.value = selectedText
         if (executeSearch) {
@@ -275,10 +288,15 @@ const stopShowSearchCancelAreaTimer = (): void => {
 }
 
 const cancelSearcher = (): void => {
-  if (searcherRunning.value && searcherCancelCallback) {
-    searcherCancelCallback()
-  }
+  invalidateSearch()
+  searchCanceled.value = true
 }
+
+watch(searchRoot, () => queueSearch())
+onBeforeUnmount(() => {
+  invalidateSearch()
+  bus.off('findInFolder', handleFindInFolder)
+})
 
 watch(showSideBar, (value, oldValue) => {
   if (rightColumn.value === 'search') {
@@ -306,9 +324,10 @@ onMounted(() => {
   flex-direction: column;
   height: 100%;
 }
+.search-wrapper:focus-within { outline: 2px solid var(--highlightThemeColor); outline-offset: 1px; }
 .search-wrapper {
   display: flex;
-  margin: 37px 8px 10px 8px;
+  margin: 4px 0 10px;
   padding: 0 6px;
   border-radius: 4px;
   height: 28px;
@@ -331,7 +350,11 @@ onMounted(() => {
     display: flex;
     flex-shrink: 0;
     margin-top: 0;
-    & > span {
+    & > button {
+      border: 0;
+      background: transparent;
+      padding: 0;
+      &:focus-visible { outline: 2px solid var(--highlightThemeColor); }
       cursor: pointer;
       width: 18px;
       height: 18px;

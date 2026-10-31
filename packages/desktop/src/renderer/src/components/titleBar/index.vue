@@ -30,13 +30,18 @@
             class="rename-input title-no-drag"
             :style="titleFontStyle"
             spellcheck="false"
-            @keydown.enter.prevent="commitRename"
+            @keydown.enter="commitRename"
+            :readonly="renameBusy"
+            :aria-invalid="!!renameError"
+            :aria-label="t('fileOperation.renameConfirm')"
+            :title="renameError || t('fileOperation.renameConfirm')"
             @keydown.esc.prevent="cancelRename"
             @blur="commitRename"
             @click.stop
           />
+          <span v-if="renaming && renameError" class="rename-error" role="alert">{{ renameError }}</span>
           <span
-            v-else
+            v-if="!renaming"
             class="filename title-no-drag"
             :class="{ isOsx: platform === 'darwin' }"
             :title="titleLabel"
@@ -411,6 +416,9 @@ const rename = () => {
 // untitled 保持旧行为（RESPONSE_FOR_RENAME = 保存即命名）。
 const renaming = ref(false)
 const renameDraft = ref('')
+const renameBusy = ref(false)
+const renameError = ref('')
+let renameTargetId: string | undefined
 const renameInputRef = ref<HTMLInputElement | null>(null)
 
 const baseNameWithoutExt = (name: string): string => {
@@ -424,6 +432,8 @@ const startRename = () => {
     rename()
     return
   }
+  renameError.value = ''
+  renameTargetId = editorStore.currentFile?.id
   renameDraft.value = baseNameWithoutExt(props.filename ?? '')
   renaming.value = true
   nextTick(() => {
@@ -433,22 +443,29 @@ const startRename = () => {
   })
 }
 
-const commitRename = () => {
-  if (!renaming.value) return
-  renaming.value = false
+const commitRename = async (event?: KeyboardEvent | FocusEvent) => {
+  if (event instanceof KeyboardEvent) {
+    if (event.isComposing || event.keyCode === 229) return
+    event.preventDefault()
+  }
+  if (!renaming.value || renameBusy.value) return
   const name = renameDraft.value.trim()
-  if (!name || !props.filename) return
-  const oldBase = baseNameWithoutExt(props.filename)
-  if (name === oldBase) return
-  const ext = props.filename.slice(oldBase.length)
-  // 输入含扩展名（如 a.md）→ 视为完整文件名（允许改扩展名）；
-  // 只输入主名 → 拼回原扩展名。
-  const full = name.includes('.') ? name : name + ext
-  editorStore.RENAME(full)
+  const oldBase = baseNameWithoutExt(props.filename ?? '')
+  if (name === oldBase && name) { renaming.value = false; return }
+  const ext = (props.filename ?? '').slice(oldBase.length)
+  const full = name && !name.includes('.') ? name + ext : name
+  renameBusy.value = true
+  renameError.value = ''
+  try {
+    await editorStore.RENAME(full, renameTargetId)
+    renaming.value = false
+  } catch (err) {
+    renameError.value = err instanceof Error ? err.message : String(err)
+  } finally { renameBusy.value = false }
 }
 
 const cancelRename = () => {
-  renaming.value = false
+  if (!renameBusy.value) { renaming.value = false; renameError.value = '' }
 }
 
 // round13（用户拍板）：顶栏文件名 hover 的小箭头——在访达中打开并高亮。
@@ -607,6 +624,7 @@ onBeforeUnmount(() => {
 }
 
 /* round13：就地重命名输入框——与标题同位、细描边、墨蓝 focus 环 */
+.rename-error { font-size: 12px; overflow-wrap: anywhere; max-width: 260px; -webkit-app-region: no-drag; }
 .rename-input {
   width: 240px;
   height: 24px;

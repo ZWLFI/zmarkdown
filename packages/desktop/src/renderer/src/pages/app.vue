@@ -66,9 +66,12 @@
         <span
           class="save-state"
           :class="{ dirty: !titleStats.isSaved }"
+          :title="saveDescription"
+          role="status" aria-live="polite"
         >
-          {{ titleStats.isSaved ? t('statusBar.saved') : t('statusBar.unsaved') }}
+          {{ saveLabel }}
         </span>
+        <button v-if="saveTarget?.saveStatus === 'failed'" class="save-retry" :title="saveDescription" @mousedown.prevent @click="editorStore.RETRY_SAVE()">{{ t('fileOperation.saveRetry') }}</button>
         <span>{{ titleStats.wordCount?.word ?? 0 }} {{ t('workspace.words') }}</span>
         <div class="status-actions">
           <button
@@ -222,6 +225,21 @@ const { currentFile, tabs } = storeToRefs(editorStore)
 const { open: bpanelOpen } = storeToRefs(bpStore)
 const { active: splitActive, draggingSplit } = storeToRefs(splitStore)
 const { scene } = storeToRefs(workspaceStore)
+
+const saveTarget = computed(() => editorStore.getSaveTarget())
+const saveLabel = computed(() => {
+  const tab = saveTarget.value
+  if (tab?.saveStatus === 'saving') return t('fileOperation.saving')
+  if (tab?.saveStatus === 'failed') return t('fileOperation.saveFailed')
+  if (tab?.saveStatus === 'waiting' && preferencesStore.autoSave && !tab.isSaved) return t('fileOperation.saveWaiting')
+  return tab?.pathname && tab.isSaved ? t('statusBar.saved') : t('statusBar.unsaved')
+})
+const saveDescription = computed(() => {
+  const tab = saveTarget.value
+  const target = tab?.saveStatus === 'saving' || tab?.saveStatus === 'failed' ? tab.saveTarget || tab.pathname : tab?.pathname
+  return [target || t('fileOperation.notSaved'), tab?.saveError,
+    tab?.savedAt ? t('fileOperation.lastSaved', { time: new Date(tab.savedAt).toLocaleTimeString() }) : ''].filter(Boolean).join('\n')
+})
 
 const pathname = computed(() => currentFile.value?.pathname)
 const filename = computed(() => currentFile.value?.filename)
@@ -504,6 +522,11 @@ onMounted(async () => {
   cursor: pointer;
   font: inherit;
 }
+.workspace-status button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.workspace-status .save-retry { color: var(--accent); text-decoration: underline; }
 .workspace-status button:hover,
 .focus-exit:hover {
   color: var(--accent);

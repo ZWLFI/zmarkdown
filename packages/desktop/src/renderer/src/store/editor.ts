@@ -579,9 +579,13 @@ export const useEditorStore = defineStore('editor', {
      * （`HANDLE_AUTO_SAVE` 只在 `!isSaved` 时发请求），也不会在关窗时被提示
      * （P0-1），等于永不落盘。
      *
-     * `version` 缺省（重命名/移动目录走的老通道）时退化为旧行为。
+     * `version` 缺省时兼容旧保存回执；重命名/移动使用 pathOnly，不进入此流程。
      */
     APPLY_SAVE_RECEIPT(tab: IFileState, version?: number): void {
+      tab.saveStatus = undefined
+      tab.saveError = undefined
+      tab.savedAt = Date.now()
+      tab.notifications = tab.notifications?.filter(note => note.exclusiveType !== 'save-failure') || []
       const currentVersion = getSaveVersion(tab)
       if (typeof version !== 'number' || version === currentVersion) {
         if (currentVersion >= 0) {
@@ -654,6 +658,12 @@ export const useEditorStore = defineStore('editor', {
       })
     },
 
+    RETRY_SAVE(): void {
+      const tab = this.getSaveTarget()
+      if (tab?.saveTarget && tab.saveTarget !== tab.pathname) this.FILE_SAVE_AS()
+      else this.FILE_SAVE()
+    },
+
     FILE_SAVE_AS(): void {
       this.flushActiveEditor()
       const projectStore = useProjectStore()
@@ -689,6 +699,10 @@ export const useEditorStore = defineStore('editor', {
     },
 
     LISTEN_FOR_SET_PATHNAME(): void {
+      window.electron.ipcRenderer.on('mt::tab-saving', (_, id, pathname) => {
+        const tab = this.tabs.find(file => file.id === id)
+        if (tab) { tab.saveStatus = 'saving'; tab.saveTarget = pathname; tab.saveError = undefined }
+      })
       window.electron.ipcRenderer.on('mt::set-pathname', (_, fileInfo) => {
         const { tabs } = this
         const { pathname, id } = fileInfo
@@ -719,8 +733,8 @@ export const useEditorStore = defineStore('editor', {
           Object.assign(tab, { filename, pathname })
           // F1(P0-4)：`mt::set-pathname` 也是「保存已落盘」的回执（主进程写完
           // 才发），同样要按版本对账——写盘期间的输入不能被它顺手置成 clean。
-          // 重命名/移动到新目录走的也是这条通道，不带版本，按旧行为处理。
-          this.APPLY_SAVE_RECEIPT(tab, fileInfo.version)
+          // 重命名/移动到新目录走的也是这条通道，pathOnly 仅更新路径。
+          if (!fileInfo.pathOnly) this.APPLY_SAVE_RECEIPT(tab, fileInfo.version)
           if (previousPathname !== pathname) {
             const annotationStore = useAnnotationStore()
             if (previousPathname) {
@@ -764,9 +778,12 @@ export const useEditorStore = defineStore('editor', {
         }
 
         tab.isSaved = false
+        tab.saveStatus = 'failed'
+        tab.saveError = msg
         this.pushTabNotification({
           tabId,
           msg: t('store.editor.errorWhileSaving', { msg }),
+          exclusiveType: 'save-failure',
           style: 'crit'
         })
         debouncedSendBufferedState()
@@ -932,17 +949,21 @@ export const useEditorStore = defineStore('editor', {
     },
 
     // ask for main process to rename this file to a new name `newFilename`
-    RENAME(newFilename: string): void {
-      if (!this.currentFile) return
-      const { id, pathname, filename } = this.currentFile
-      if (typeof filename === 'string' && filename !== newFilename) {
-        const newPathname = window.path.join(window.path.dirname(pathname), newFilename)
-        window.electron.ipcRenderer.send('mt::rename', {
-          id,
-          pathname,
-          newPathname,
-          currentFile: deepClone(this.currentFile)
-        })
+    async RENAME(newFilename: string, tabId?: string): Promise<void> {
+      const tab = this.tabs.find(file => file.id === (tabId ?? this.currentFile?.id))
+      if (!tab?.pathname) throw new Error(t('fileOperation.renameMissing'))
+      const name = newFilename.trim()
+      if (!name || name === '.' || name === '..' || /[\\/\0]/.test(name)) throw new Error(t('fileOperation.renameInvalid'))
+      if (tab.filename === name) return
+      const result = await window.electron.ipcRenderer.invoke('mt::rename', {
+        id: tab.id, pathname: tab.pathname,
+        newPathname: window.path.join(window.path.dirname(tab.pathname), name)
+      })
+      if (!result.ok) {
+        if (result.canceled) throw new Error(t('fileOperation.renameCanceled'))
+        const code = result.error || 'unknown'
+        const reason = ['EACCES', 'EPERM', 'ENOENT', 'ENOSPC', 'EINVAL'].includes(code) ? t('fileOperation.' + code) : code
+        throw new Error(t('fileOperation.renameFailed', { reason }))
       }
     },
 
@@ -1664,12 +1685,15 @@ export const useEditorStore = defineStore('editor', {
         autoSaveTimers.delete(id)
       }
 
+      const waitingTab = this.tabs.find(tab => tab.id === id)
+      if (waitingTab && waitingTab.saveStatus !== 'saving') waitingTab.saveStatus = 'waiting'
       const timer = setTimeout(() => {
         autoSaveTimers.delete(id)
 
         // Waiting can span a preference change, rename, Save As, or another edit.
         // Read the path, content, options and receipt version from the same live tab.
         const tab = this.tabs.find((t) => t.id === id)
+        if (tab?.saveStatus === 'waiting') tab.saveStatus = undefined
         if (preferencesStore.autoSave && tab?.pathname && !tab.isSaved) {
           const defaultPath = getRootFolderFromState(projectStore)
           window.electron.ipcRenderer.send(

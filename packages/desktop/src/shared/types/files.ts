@@ -73,6 +73,10 @@ export interface IFileState {
   pathname: string
   markdown: string
   isSaved: boolean
+  saveStatus?: 'waiting' | 'saving' | 'failed'
+  saveError?: string
+  saveTarget?: string
+  savedAt?: number
   encoding: FileEncoding
   lineEnding: LineEnding | string
   adjustLineEndingOnSave: boolean

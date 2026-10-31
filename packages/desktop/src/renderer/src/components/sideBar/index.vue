@@ -23,6 +23,7 @@
       >
         <tree />
       </div>
+      <div v-if="activeTab === 'search'" class="sb-sec"><folder-search /></div>
     </div>
     <!-- 宽度拖拽手柄：贴内容侧右缘，6px 命中区；拖动夹逼 220px~50% 窗宽 -->
     <div
@@ -49,15 +50,14 @@ import { storeToRefs } from 'pinia'
 
 import Tree from './tree.vue'
 import Toc from './toc.vue'
+import FolderSearch from './search.vue'
 
 const layoutStore = useLayoutStore()
 
 const { rightColumn, showSideBar, effectiveSideBarWidth } = storeToRefs(layoutStore)
 
-// MoMark：右栏（rail）已移除。rightColumn 仅保留 toc/files 语义用于 tab 选择，
-// 其余历史值（search/''）一律落到文件 tab。
-type SideBarTab = 'outline' | 'files'
-const activeTab = computed<SideBarTab>(() => (rightColumn.value === 'toc' ? 'outline' : 'files'))
+type SideBarTab = 'outline' | 'files' | 'search'
+const activeTab = computed<SideBarTab>(() => rightColumn.value === 'toc' ? 'outline' : rightColumn.value === 'search' ? 'search' : 'files')
 
 // round27：宽度拖拽——拖拽中实时 SET_SIDE_BAR_WIDTH（禁用过渡防抖动），
 // 松手时再调度一次持久化。

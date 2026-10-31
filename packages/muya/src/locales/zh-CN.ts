@@ -1,6 +1,10 @@
 export const zhCN = {
     name: 'zh-CN',
     resource: {
+        'Remove Row Scope': '删除第 {index} 行（整行，共 {count} 个单元格）',
+        'Remove Column Scope': '删除第 {index} 列（整列，共 {count} 个单元格）',
+        'Table Delete Hint': '文字选区：仅删除文字。单元格选区：先清空内容，再次删除可能移除结构。此菜单删除整行或整列，可撤销。',
+
     // tableTools
         'Insert Row Above': '上面插入行',
         'Insert Row Below': '下面插入行',

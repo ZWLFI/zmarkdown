@@ -331,6 +331,7 @@ const handleResponseForSave = async (
   // requires the strict `MarkdownDocumentOptions` shape — the renderer always
   // populates every field for the unsaved-file dialog payload, so the cast
   // is safe at this seam.
+  win.webContents.send('mt::tab-saving', id, filePath)
   return writeMarkdownFile(filePath, markdown, options as Parameters<typeof writeMarkdownFile>[2])
     .then((): SaveOutcome => {
       if (!alreadyExistOnDisk) {
@@ -544,6 +545,7 @@ ipcMain.on(
 
     if (filePath && !canceled) {
       filePath = path.resolve(filePath)
+      win.webContents.send('mt::tab-saving', id, filePath)
       writeMarkdownFile(filePath, markdown, options as Parameters<typeof writeMarkdownFile>[2])
         .then(() => {
           if (!alreadyExistOnDisk) {
@@ -708,44 +710,29 @@ interface RenamePayload {
   newPathname: string
 }
 
-ipcMain.on('mt::rename', async (e, { id, pathname, newPathname }: RenamePayload) => {
-  if (pathname === newPathname) return
+ipcMain.handle('mt::rename', async (e, { id, pathname, newPathname }: RenamePayload) => {
+  if (!pathname || !newPathname || path.dirname(pathname) !== path.dirname(newPathname)) {
+    return { ok: false, error: 'EINVAL' }
+  }
+  if (pathname === newPathname) return { ok: true }
   const win = BrowserWindow.fromWebContents(e.sender)
-  if (!win) {
-    return
-  }
-
-  const doRename = (): void => {
-    fsRename(pathname, newPathname, (err: NodeJS.ErrnoException | null) => {
-      if (err) {
-        log.error(`mt::rename: Cannot rename "${pathname}" to "${newPathname}".\n${err.stack}`)
-        return
-      }
-
-      ipcMain.emit('window-change-file-path', win.id, newPathname, pathname)
-      e.sender.send('mt::set-pathname', {
-        id,
-        pathname: newPathname,
-        filename: path.basename(newPathname)
+  if (!win) return { ok: false, error: 'Window closed' }
+  try {
+    if (await exists(newPathname)) {
+      const { response } = await dialog.showMessageBox(win, {
+        type: 'warning', buttons: [t('dialog.replace'), t('dialog.cancel')], defaultId: 1,
+        message: t('dialog.fileExists', { filename: path.basename(newPathname) }), cancelId: 1, noLink: true
       })
-    })
-  }
-
-  if (!(await exists(newPathname))) {
-    doRename()
-  } else {
-    const { response } = await dialog.showMessageBox(win, {
-      type: 'warning',
-      buttons: [t('dialog.replace'), t('dialog.cancel')],
-      defaultId: 1,
-      message: t('dialog.fileExists', { filename: path.basename(newPathname) }),
-      cancelId: 1,
-      noLink: true
-    })
-
-    if (response === 0) {
-      doRename()
+      if (response !== 0) return { ok: false, canceled: true }
     }
+    await new Promise<void>((resolve, reject) => fsRename(pathname, newPathname, err => err ? reject(err) : resolve()))
+    ipcMain.emit('window-change-file-path', win.id, newPathname, pathname)
+    e.sender.send('mt::set-pathname', { id, pathname: newPathname, filename: path.basename(newPathname), pathOnly: true })
+    return { ok: true }
+  } catch (err) {
+    log.error('Rename failed:', err)
+    const failure = err as NodeJS.ErrnoException
+    return { ok: false, error: failure.code || failure.message || String(err) }
   }
 })
 
@@ -773,7 +760,8 @@ ipcMain.on(
         e.sender.send('mt::set-pathname', {
           id,
           pathname: filePath,
-          filename: path.basename(filePath)
+          filename: path.basename(filePath),
+          pathOnly: true
         })
       })
     }

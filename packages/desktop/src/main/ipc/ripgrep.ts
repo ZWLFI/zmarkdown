@@ -295,8 +295,11 @@ const startTextSearch = (
     let pendingTrailingContexts: Set<unknown[]> = new Set()
 
     child.on('close', (code) => {
-      if (code !== null && code > 1 && bufferError) {
-        log.warn('Ripgrep finished with errors (exit code ' + code + '):', bufferError)
+      if (cancelled || finished) return
+      // rg: 0 = matches, 1 = no matches, >1 = failure (including invalid regex).
+      if (code === null || code > 1) {
+        finishIfDone(new Error(bufferError.trim() || `Ripgrep exited with code ${code}`))
+        return
       }
       if (buffer && !cancelled) {
         try {

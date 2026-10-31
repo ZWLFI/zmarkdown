@@ -1,6 +1,10 @@
 export const en = {
     name: 'en',
     resource: {
+        'Remove Row Scope': 'Delete row {index} (entire row, {count} cells)',
+        'Remove Column Scope': 'Delete column {index} (entire column, {count} cells)',
+        'Table Delete Hint': 'Text selection deletes text. Cell selection clears content first; deleting again may remove structure. This menu deletes entire rows or columns. Undo is available.',
+
     // tableTools
         'Insert Row Above': 'Insert Row Above',
         'Insert Row Below': 'Insert Row Below',

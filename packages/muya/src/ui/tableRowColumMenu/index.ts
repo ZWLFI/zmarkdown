@@ -8,9 +8,10 @@ import { h, patch } from '../../utils/snabbdom';
 import BaseFloat from '../baseFloat';
 import { toolList } from './config';
 import './index.css';
+import { removalLabel } from './scope';
 
 const defaultOptions = {
-    placement: 'bottom' as const,
+    placement: 'bottom-end' as const,
     offsetOptions: {
         mainAxis: 0,
         crossAxis: 0,
@@ -65,27 +66,37 @@ export class TableRowColumMenu extends BaseFloat {
         const { i18n } = this.muya;
         const renderArray: MenuItem[] = toolList[tableInfo!.barType];
         const children = renderArray.map((item) => {
-            const { label } = item;
+            const label = item.action === 'remove'
+                ? removalLabel(this._block!, item.target as 'row' | 'column', i18n) : i18n.t(item.label);
 
             const selector = 'li.item';
 
             return h(
                 selector,
                 {
+                    attrs: { role: 'menuitem', tabindex: '0', title: label },
                     dataset: {
                         label: item.action,
                     },
                     on: {
+                        keydown: (event: KeyboardEvent) => {
+                            if (event.key === 'Enter' || event.key === ' ') this.selectItem(event, item);
+                            if (event.key === 'Escape') this.hide();
+                        },
                         click: (event) => {
                             this.selectItem(event, item);
                         },
                     },
                 },
-                i18n.t(label),
+                label,
             );
         });
 
-        const vnode = h('ul', children);
+        const translatedHint = i18n.t('Table Delete Hint');
+        const hint = translatedHint === 'Table Delete Hint'
+            ? 'Text selection deletes text. Cell selection clears content first; deleting again can remove structure. This menu removes entire rows or columns. Undo is available.'
+            : translatedHint;
+        const vnode = h('ul', { attrs: { role: 'menu' } }, [...children, h('li.scope-hint', hint)]);
 
         if (oldVNode)
             patch(oldVNode, vnode);

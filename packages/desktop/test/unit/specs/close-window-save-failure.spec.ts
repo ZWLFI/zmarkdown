@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { mkdtempSync, rmSync, writeFileSync } from 'fs'
+import { mkdtempSync, rmSync, writeFileSync, readFileSync, existsSync } from 'fs'
 import { tmpdir } from 'os'
 import path from 'path'
 
@@ -241,5 +241,31 @@ describe('F1(P0-2) — 关窗前保存：只有全部成功才关窗', () => {
     expect(closeEmitted()).toBe(false)
     const failureDialog = state.showMessageBox.mock.calls[1]![1] as { detail?: string }
     expect(failureDialog.detail).toContain('bad.md')
+  })
+})
+
+
+describe('rename result acknowledgements', () => {
+  const rename = (pathname: string, newPathname: string) => state.handlers.get('mt::rename')!({ sender: { send: state.webContentsSend } }, { id: 'rename-tab', pathname, newPathname })
+  it('returns a failure without changing paths, then permits retry', async () => {
+    const dir = tempDir(), src = path.join(dir, 'source.md'), dest = path.join(dir, '中文.md')
+    expect(await rename(src, dest)).toEqual({ ok: false, error: 'ENOENT' })
+    expect(state.webContentsSend).not.toHaveBeenCalled()
+    writeFileSync(src, 'keep original content')
+    expect(await rename(src, dest)).toEqual({ ok: true })
+    expect(readFileSync(dest, 'utf8')).toBe('keep original content'); expect(existsSync(src)).toBe(false)
+    expect(state.webContentsSend).toHaveBeenCalledWith('mt::set-pathname', expect.objectContaining({ pathname: dest, pathOnly: true }))
+  })
+  it('keeps both files when replacement is canceled', async () => {
+    const dir = tempDir(), src = path.join(dir, 'source.md'), dest = path.join(dir, 'existing.md')
+    writeFileSync(src, 'source'); writeFileSync(dest, 'existing')
+    expect(await rename(src, dest)).toEqual({ ok: false, canceled: true })
+    expect(readFileSync(src, 'utf8')).toBe('source'); expect(readFileSync(dest, 'utf8')).toBe('existing')
+  })
+  it('refuses a rename into another directory', async () => {
+    const dir = tempDir(), src = path.join(dir, 'source.md')
+    writeFileSync(src, 'safe')
+    expect(await rename(src, path.join(dir, 'other', 'new.md'))).toEqual({ ok: false, error: 'EINVAL' })
+    expect(readFileSync(src, 'utf8')).toBe('safe')
   })
 })

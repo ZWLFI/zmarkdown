@@ -1,5 +1,7 @@
 .mu-table-bar-tools {
-    min-width: 120px;
+    width: 320px;
+    min-width: 0;
+    max-width: calc(100vw - 24px);
 }
 
 .mu-table-bar-tools ul,
@@ -15,13 +17,14 @@
 .mu-table-bar-tools li.item {
     position: relative;
 
-    height: 25px;
+    min-height: 25px;
     padding: 0 8px;
 
     color: var(--editor-color);
     font-size: 13px;
     line-height: 25px;
-    white-space: nowrap;
+    white-space: normal;
+    overflow-wrap: anywhere;
 
     cursor: pointer;
 }
@@ -47,3 +50,6 @@
 .mu-table-bar-tools li.item:hover {
     background-color: var(--float-hover-color);
 }
+
+.mu-table-bar-tools .scope-hint { max-width: 310px; padding: 8px; color: var(--editor-color); opacity: .75; font-size: 12px; line-height: 1.5; }
+.mu-table-bar-tools li.item:focus-visible { outline: 2px solid var(--theme-color); outline-offset: -2px; }
